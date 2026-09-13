@@ -141,13 +141,13 @@ namespace {
         PackageCheckResult result;
         result.name = name;
     
-        //APT — no shell: existence = apt-cache show printed something to stdout
+        //APT
         if (zpm::common::detection_PM.pm.apt) {
-            std::string out = ign::run_to_string("apt-cache show " + name);
-            result.found_apt = !out.empty();
+            auto [out, exit_code] = ign::run_to_string_with_status("apt-cache show " + name);
+            result.found_apt = (exit_code == 0) && out.find("Package:") != std::string::npos;
         }
     
-        // FLATPAK — no shell, no grep: fetch the list and search substring in C++
+        // FLATPAK
         if (zpm::common::detection_PM.pm.flatpak) {
             std::string out = ign::run_to_string("flatpak search " + name);
 
@@ -163,10 +163,10 @@ namespace {
             }
         }
     
-        // SNAP — no shell
+            // SNAP
         if (zpm::common::detection_PM.pm.snap) {
-            std::string out = ign::run_to_string("snap info " + name);
-            result.found_snap = !out.empty();
+            auto [out, exit_code] = ign::run_to_string_with_status("snap info " + name);
+            result.found_snap = (exit_code == 0) && !out.empty();
         }
     
         return result;
@@ -290,13 +290,13 @@ namespace {
     //asks the user to confirm before installing, unless skipconfirmation_install is set
     bool askforconfirmation(){
 
-        zpm::outl(' ');
         zpm::outl(zpm::color::bold, "About to install:", zpm::color::reset);
 
         for (std::size_t i = 0; i < checked_packages.size(); i++) {
             zpm::outl("- ", checked_packages[i].name);
         }
 
+        zpm::outl(' ');
         zpm::out("Proceed? [y/n]: ");
 
         std::string answer;
@@ -323,7 +323,7 @@ namespace {
             const std::string& name = checked_packages[i].name;
             InstallSource source = checked_packages[i].chosen_source;
             if (source == InstallSource::apt) {
-                if (ign::run_to_file(logpath, "apt install -y " + name) == 0) {
+                if (ign::run_to_file(logpath, "apt-get install -y " + name) == 0) {
                     checked_packages[i].installed = true;
                 }
             } else if (source == InstallSource::flatpak) {

@@ -11,6 +11,8 @@
 
 //run localy e.g. ./INSTALL (add exec permisions)
 
+//plik zpm-cde musi byc w /bin, czyli trzeba stowrzyc katalog, usun po stworzeniu calej struktury ignac
+
 //library
 #include "../zpm-lib/zpm.hpp"
 #include "../ign-lib/ign.hpp"
@@ -168,7 +170,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    std::filesystem::create_symlink("/opt/zpm-cde/zpm-cde", link, ec);
+    std::filesystem::create_symlink("/opt/zpm-cde/bin/zpm-cde", link, ec);
 
     if (ec) {
         zpm::outl(zpm::color::bold_red, "ERROR: creating symlink failed! (", ec.message(), ")", zpm::color::reset);

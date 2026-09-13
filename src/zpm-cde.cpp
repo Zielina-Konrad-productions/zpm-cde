@@ -45,11 +45,11 @@ void helpmessage() {
     '\n', "remove, rm        Remove system package", '\n', "upgrade, upgr     Upgrade ZPM-CDE Edition", '\n', "uninstall         Uninstall ZPM-CDE Edition", '\n');
 }
 
-void checkdependencies (std::string& name) {
+void checkdependencies (std::string name) {
 
-    if (ign::run_to_file(name + " --help") != 0) {
+    if (ign::run_to_file("/dev/null", name + " --help") != 0) {
 
-        zpm::outl(zpm::color::bold_red, "ERROR: " + name);
+        zpm::outl(zpm::color::bold_red, "ERROR: lacking dependencies: " ,name ,zpm::color::reset);
     }
 }
 

@@ -1,0 +1,6 @@
+/opt/zpm-cde/
+├── bin/
+│   └── zpm-cde        <-- Główny program
+├── INST               <-- Binarka / plik instalatora
+├── LICENSE
+└── version.txt
