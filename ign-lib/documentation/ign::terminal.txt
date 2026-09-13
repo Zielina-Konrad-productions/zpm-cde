@@ -1,0 +1,256 @@
+USAGE OF ign::terminal
+
+RETURN CODES:
+Terminal helpers return void.
+ign::terminal::enable_ansi() returns bool.
+
+FUNCTIONS:
+ign::terminal::enable_ansi()         - enable ANSI support on Windows consoles
+ign::terminal::clear()               - clear screen, scrollback, and go home
+ign::terminal::clear_screen()        - clear only the visible screen
+ign::terminal::clear_line()          - clear the current line
+ign::terminal::clear_line_right()    - clear from cursor to end of line
+ign::terminal::clear_line_left()     - clear from cursor to start of line
+ign::terminal::cursor::home()         - move cursor to top-left
+ign::terminal::cursor::top_left()     - alias for cursor::home()
+ign::terminal::cursor::top_left(column) - top row at column
+ign::terminal::cursor::top_middle()   - move cursor to top-middle
+ign::terminal::cursor::top_middle(width) - center width chars on top row
+ign::terminal::cursor::top_right()    - move cursor to top-right
+ign::terminal::cursor::top_right(width) - move so width chars fit top-right
+ign::terminal::cursor::bottom_left()  - move cursor to bottom-left
+ign::terminal::cursor::bottom_left(column) - bottom row at column
+ign::terminal::cursor::bottom_middle() - move cursor to bottom-middle
+ign::terminal::cursor::bottom_middle(width) - center width chars bottom row
+ign::terminal::cursor::bottom_right() - move cursor to bottom-right
+ign::terminal::cursor::bottom_right(width) - fit width chars bottom-right
+ign::terminal::cursor::left_edge()    - move to column 1 on current line
+ign::terminal::cursor::right_edge()   - move to last column on current line
+ign::terminal::cursor::right_edge(width) - fit width chars current line
+ign::terminal::size()                - return terminal rows/columns
+ign::terminal::rows()                - return row count, with fallback
+ign::terminal::columns()             - return column count, with fallback
+ign::terminal::cursor::to(row, col)   - move cursor to row and column
+ign::terminal::cursor::to_right(row, width) - right-align on row
+ign::terminal::cursor::to_middle(row, width) - center width chars on row
+ign::terminal::cursor::column(col)    - move to column on current line
+ign::terminal::cursor::middle()       - move to center of screen
+ign::terminal::cursor::middle(width)  - center width chars in middle row
+ign::terminal::cursor::up(count)      - move cursor up
+ign::terminal::cursor::down(count)    - move cursor down
+ign::terminal::cursor::right(count)   - move cursor right
+ign::terminal::cursor::left(count)    - move cursor left
+ign::terminal::cursor::hide()         - hide the terminal cursor
+ign::terminal::cursor::show()         - show the terminal cursor
+ign::terminal::cursor::save()         - save the cursor position
+ign::terminal::cursor::restore()      - restore the saved cursor position
+
+
+IMPORTANT:
+These functions write ANSI escape codes to the terminal and flush the stream.
+They work in terminals that support ANSI escape codes.
+
+On Windows, terminal helpers automatically try to enable ANSI escape-code
+support before writing. You can call enable_ansi() directly when you want to
+check this step yourself. On Linux and macOS, enable_ansi() returns true and
+does not need to do anything.
+
+cursor::to(row, col) uses 1-based coordinates. Passing 0 is treated as 1.
+cursor::column(col) is also 1-based.
+cursor::up/down/right/left ignore a count of 0.
+
+size() returns:
+rows
+columns
+available
+
+When the terminal size cannot be detected, available is false.
+rows() uses fallback 24 by default.
+columns() uses fallback 80 by default.
+
+
+SYNTAX:
+
+ign::terminal::enable_ansi();
+
+Example:
+if (!ign::terminal::enable_ansi()) {
+    ign::println_error("ANSI terminal output is not available");
+}
+
+Notes:
+Calling this manually is optional. The terminal helpers call it automatically.
+
+
+ign::terminal::clear();
+
+Example:
+ign::terminal::clear();
+ign::println_green("Fresh screen");
+
+Notes:
+clear() clears the visible screen and scrollback history where supported.
+
+
+ign::terminal::clear_screen();
+
+Example:
+ign::terminal::clear_screen();
+ign::println_green("Visible screen only");
+
+Notes:
+clear_screen() clears only the currently visible terminal screen and goes to
+the top-left. It leaves scrollback history alone.
+
+
+ign::terminal::clear_line();
+
+Example:
+ign::print("Loading...");
+ign::sleep(500);
+ign::terminal::clear_line();
+ign::println_green("Done");
+
+Notes:
+clear_line() returns the cursor to column 1 and clears the full line.
+
+
+ign::terminal::cursor::to(row, column);
+
+Example:
+ign::terminal::clear();
+ign::terminal::cursor::to(5, 10);
+ign::println("Hello at row 5, column 10");
+
+
+ign::terminal::cursor::top_left();
+ign::terminal::cursor::top_left(column);
+ign::terminal::cursor::top_middle();
+ign::terminal::cursor::top_middle(width);
+ign::terminal::cursor::top_right();
+ign::terminal::cursor::bottom_left();
+ign::terminal::cursor::bottom_left(column);
+ign::terminal::cursor::bottom_middle();
+ign::terminal::cursor::bottom_middle(width);
+ign::terminal::cursor::bottom_right();
+ign::terminal::cursor::left_edge();
+ign::terminal::cursor::right_edge();
+ign::terminal::cursor::top_right(width);
+ign::terminal::cursor::bottom_right(width);
+ign::terminal::cursor::right_edge(width);
+ign::terminal::cursor::to_right(row, width);
+ign::terminal::cursor::to_middle(row, width);
+ign::terminal::cursor::middle();
+ign::terminal::cursor::middle(width);
+
+Example:
+ign::terminal::clear();
+ign::terminal::cursor::top_left();
+ign::println_bold("Title");
+
+ign::terminal::cursor::bottom_left();
+ign::terminal::clear_line();
+ign::print_bold_cyan("HP: ", hp, " | Gold: ", gold);
+
+Notes:
+cursor::top_left() is the readable alias for cursor::home().
+cursor::top_left(6) moves to row 1, column 6.
+cursor::bottom_left(6) moves to the bottom row, column 6.
+cursor::right_edge() moves to the last column of the current line.
+cursor::bottom_left() is useful for a status line at the bottom of the screen.
+The width overloads move to the start column where that many visible
+characters fit against the right edge.
+Middle width overloads move to the start column where that many visible
+characters are centered.
+
+Example centered title:
+std::string title = "Tekstowe RPG Ignaca";
+ign::terminal::cursor::top_middle(title.size());
+ign::println_bold_orange(title);
+
+Example with colored controls:
+ign::terminal::cursor::top_left();
+ign::terminal::clear_line();
+ign::print_bold_cyan("q ");
+ign::print_bold_red("-");
+ign::print_bold(" wyjscie");
+ign::print_bold_red(".");
+
+ign::terminal::cursor::top_right(14);
+ign::print_bold_cyan("e ");
+ign::print_bold_red("-");
+ign::print_bold(" ekwipunek");
+ign::print_bold_red(".");
+
+
+ign::terminal::size();
+ign::terminal::rows();
+ign::terminal::columns();
+
+Example:
+const auto terminal = ign::terminal::size();
+if (terminal.available) {
+    ign::println("rows: ", terminal.rows);
+    ign::println("columns: ", terminal.columns);
+}
+
+Print size:
+const auto size = ign::terminal::size();
+ign::println("terminal: ", size.columns, "x", size.rows);
+
+Notes:
+size() returns a struct, so ign::print(size) does not work directly.
+Print size.rows, size.columns, and size.available instead.
+
+ign::println("fallback rows: ", ign::terminal::rows());
+ign::println("fallback columns: ", ign::terminal::columns());
+
+
+ign::terminal::cursor::hide();
+ign::terminal::cursor::show();
+
+Example:
+ign::terminal::cursor::hide();
+
+for (int i = 0; i <= 100; ++i) {
+    ign::print_rewriteln_green("Progress: ", i, "%");
+    ign::sleep(20);
+}
+
+ign::terminal::cursor::show();
+ign::println();
+
+
+RAW ANSI CONSTANTS:
+ign::terminal::CLEAR_SCREEN
+ign::terminal::CLEAR_SCROLLBACK
+ign::terminal::CURSOR_HOME
+ign::terminal::CLEAR_LINE
+ign::terminal::CLEAR_LINE_RIGHT
+ign::terminal::CLEAR_LINE_LEFT
+ign::terminal::HIDE_CURSOR
+ign::terminal::SHOW_CURSOR
+ign::terminal::SAVE_CURSOR
+ign::terminal::RESTORE_CURSOR
+
+Example:
+ign::print(ign::terminal::CLEAR_SCREEN, ign::terminal::CURSOR_HOME);
+
+
+USAGE EXAMPLE:
+
+#include <ign.hpp>
+
+int main() {
+    ign::terminal::clear();
+    ign::terminal::cursor::hide();
+
+    for (int i = 0; i <= 100; ++i) {
+        ign::terminal::cursor::to(1, 1);
+        ign::println_green("Progress: ", i, "%");
+        ign::sleep(25);
+    }
+
+    ign::terminal::cursor::show();
+    return 0;
+}

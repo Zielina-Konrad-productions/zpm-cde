@@ -1,0 +1,186 @@
+USAGE OF ign::print
+
+RETURN CODES:
+Terminal print functions return void.
+
+FUNCTIONS:
+ign::print()                    - print values to stdout
+ign::println()                  - print values to stdout with newline
+ign::println_each()             - print every argument on a separate line
+ign::print_rewriteln()          - rewrite the current stdout line
+ign::println_rewriteln()        - rewrite the current stdout line with newline
+ign::print_error()              - print values to stderr
+ign::println_error()            - print values to stderr with newline
+ign::println_each_error()       - print every argument to stderr
+ign::print_error_rewriteln()    - rewrite the current stderr line
+ign::println_error_rewriteln()  - rewrite the current stderr line with newline
+ign::print_error_NAME()         - print colored text to stderr
+ign::println_error_NAME()       - print colored text to stderr with newline
+ign::println_each_error_NAME()  - print colored stderr lines
+
+
+IMPORTANT:
+All print functions accept one or more streamable values.
+For file output use ign::file::write(), ign::file::write_line(), or
+ign::file::overwrite().
+
+Streamable means the value works with operator<<.
+Examples: strings, numbers, paths, chars.
+
+Example:
+ign::println("Exit code: ", code);
+
+This prints the values without needing string concatenation.
+
+
+SYNTAX:
+
+ign::print(values...);
+
+Example:
+ign::print("Loading... ");
+
+Notes:
+print() does not add a newline.
+
+Manual colors:
+ign::print(ign::color::RED, "red text", ign::color::RESET);
+
+Remember:
+When using raw ign::color constants, add ign::color::RESET yourself.
+Named helpers such as ign::print_red() reset automatically.
+
+
+ign::println(values...);
+
+Example:
+ign::println("Hello!");
+ign::println("Age: ", age);
+
+Notes:
+println() adds one newline after all values.
+
+
+ign::println_each(values...);
+
+Example:
+ign::println_each("first", "second", "third");
+
+Output:
+first
+second
+third
+
+Notes:
+Each argument is printed on its own line.
+
+
+ign::print_rewriteln(values...);
+ign::println_rewriteln(values...);
+
+Example:
+ign::print_rewriteln("Progress: ", percent, "%");
+ign::println_rewriteln("Done");
+
+Notes:
+These return to the start of the current terminal line, clear the rest of
+the line, print the values, and flush the stream.
+print_rewriteln() does not add a newline.
+println_rewriteln() adds a newline after rewriting the line.
+
+
+ign::print_error(values...);
+ign::println_error(values...);
+ign::println_each_error(values...);
+
+Example:
+ign::println_error("Something went wrong");
+
+Notes:
+These print to stderr.
+
+
+ign::print_error_rewriteln(values...);
+ign::println_error_rewriteln(values...);
+
+Example:
+ign::print_error_rewriteln("Retry: ", attempt);
+ign::println_error_rewriteln("Failed");
+
+Notes:
+These rewrite the current stderr line and flush the stream.
+
+
+ign::print_error_NAME(values...);
+ign::println_error_NAME(values...);
+ign::println_each_error_NAME(values...);
+ign::print_error_rewriteln_NAME(values...);
+ign::println_error_rewriteln_NAME(values...);
+
+Example:
+ign::println_error_red("Error: ", code);
+
+Notes:
+Replace NAME with any color or style name listed below.
+These print colored text to stderr.
+
+
+COLORED PRINT FUNCTIONS:
+
+Pattern:
+ign::print_NAME(values...);
+ign::println_NAME(values...);
+ign::println_each_NAME(values...);
+ign::print_rewriteln_NAME(values...);
+ign::println_rewriteln_NAME(values...);
+ign::print_error_NAME(values...);
+ign::println_error_NAME(values...);
+ign::println_each_error_NAME(values...);
+ign::print_error_rewriteln_NAME(values...);
+ign::println_error_rewriteln_NAME(values...);
+
+Examples:
+ign::print_red("red text");
+ign::println_green("green text");
+ign::println_bold_cyan("bold cyan text");
+ign::println_each_yellow("first", "second");
+ign::print_rewriteln_bold_orange("Progress: ", percent, "%");
+ign::println_error_rewriteln_red("Failed");
+
+Available NAME values:
+black, red, green, yellow, blue, magenta, purple, pink, cyan, white, grey,
+orange
+
+bright_red, bright_green, bright_yellow, bright_blue, bright_magenta,
+bright_purple, bright_pink, bright_cyan, bright_white
+
+bold_black, bold_red, bold_green, bold_yellow, bold_blue, bold_magenta,
+bold_purple, bold_pink, bold_cyan, bold_white, bold_orange
+
+bg_black, bg_red, bg_green, bg_yellow, bg_blue, bg_magenta, bg_purple,
+bg_pink, bg_cyan, bg_white, bg_orange
+
+RGB colors:
+ign::print(ign::color::rgb(255, 105, 180), "hot pink", ign::color::RESET);
+ign::println(
+    ign::color::bold_rgb(128, 0, 255),
+    "bold custom purple",
+    ign::color::RESET
+);
+
+bold, dim, italic, underline, blink, reverse, hidden, strike
+
+
+USAGE EXAMPLE:
+
+#include <ign.hpp>
+
+int main() {
+    int code = 0;
+
+    ign::print("Starting... ");
+    ign::println_green("done");
+    ign::println("Exit code: ", code);
+
+    return 0;
+}

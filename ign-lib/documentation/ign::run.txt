@@ -1,0 +1,343 @@
+USAGE OF ign::run
+
+RETURN CODES:
+0  - success
+>0 - program exit code
+<0 - process start / library error
+
+COMMON NEGATIVE CODES:
+-1 - unknown error
+-4 - program not found
+-5 - permission denied
+-7 - pipe error
+-8 - spawn error
+
+NOTES ABOUT RETURN CODES:
+ign::run() returns the exit code of the program.
+For example, if the program exits with 1, ign::run() returns 1.
+
+If the program cannot be started, a negative error code is returned.
+
+For ign::run_shell(), a missing command is usually a shell exit code.
+On Linux/macOS it is often 127, because /bin/sh started correctly.
+
+
+FUNCTIONS:
+ign::run() - run program directly
+ign::run_shell() - run command through the system shell
+ign::run_to_file() - run program and write output to file
+ign::run_shell_to_file() - run shell command and write output to file
+
+
+IMPORTANT:
+ign::run() does not use the shell.
+Shell operators are not interpreted by ign::run().
+
+These do NOT work as shell syntax in ign::run():
+&&
+|
+>
+>>
+*
+$HOME
+
+Use ign::run_shell() when you need shell syntax.
+
+For run_to_file() and run_shell_to_file(), paths beginning with ~ are expanded
+to the current user's home directory.
+
+Example:
+ign::run_to_file("~/logs/git.log", {"git", "status"}, false);
+
+Only ~ and ~/... are expanded.
+
+WARNING:
+Do not put untrusted user input into ign::run_shell().
+The shell can interpret special characters as commands.
+
+
+RECOMMENDED STYLE:
+Pass the program and its arguments separately.
+This avoids command parsing problems and preserves spaces inside arguments.
+
+Example:
+ign::run({"git", "status", "--short"});
+
+This runs:
+program: git
+argument: status
+argument: --short
+
+
+SYNTAX:
+
+ign::run({"program", "arg1", "arg2"});
+
+Example:
+ign::run({"git", "log", "--oneline", "-5"});
+
+Notes:
+This is the recommended style.
+Each item is one argument.
+Quotes are not needed around arguments with spaces.
+
+Example with spaces:
+ign::run({"echo", "hello world"});
+
+
+ign::run("command string");
+
+Example:
+ign::run("git status --short");
+
+Notes:
+The command string is split into program arguments.
+It still does not use the shell.
+Simple quotes and escaped spaces are handled.
+Shell expansion is not handled.
+
+Example:
+ign::run("echo \"hello world\"");
+
+
+ign::run("command1", "command2", "command3");
+
+Example:
+ign::run(
+    "git status --short",
+    "git log --oneline -5"
+);
+
+Notes:
+Multiple complete commands are run in sequence.
+Every command is attempted.
+The first non-zero result is returned.
+If every command returns 0, the final result is 0.
+
+
+ign::run_shell("shell command");
+
+Example:
+ign::run_shell("echo first && echo second");
+
+Shell examples:
+ign::run_shell("ls -la | grep cpp");
+ign::run_shell("echo hello > /tmp/message.txt");
+ign::run_shell("echo $HOME");
+
+Notes:
+run_shell() uses /bin/sh -c on Linux/macOS.
+run_shell() uses cmd.exe /C on Windows.
+Use it only when shell features are needed.
+
+
+ign::run_shell("command1", "command2", "command3");
+
+Example:
+ign::run_shell(
+    "echo first && echo second",
+    "echo third"
+);
+
+Notes:
+Multiple shell commands are run in sequence.
+Every command is attempted.
+The first non-zero result is returned.
+
+
+ign::run_to_file("fullpath", {"program", "arg1", "arg2"});
+
+Example:
+ign::run_to_file(
+    "/tmp/logs/status.log",
+    {"git", "status", "--short"}
+);
+
+Notes:
+run_to_file() writes combined stdout and stderr to a file.
+Missing parent directories are created.
+The output file is created if it does not exist.
+Output is appended by default.
+
+
+ign::run_to_file("fullpath", "command string");
+
+Example:
+ign::run_to_file(
+    "/tmp/logs/status.log",
+    "git status --short"
+);
+
+Notes:
+The command string is split like ign::run("command string").
+Shell syntax is not interpreted.
+
+
+ign::run_to_file("fullpath", "command string", false);
+
+Example:
+ign::run_to_file(
+    "/tmp/logs/latest.log",
+    "git status --short",
+    false
+);
+
+Notes:
+The third argument controls append mode.
+true  - append output to the file
+false - overwrite the file
+
+Default:
+true
+
+
+ign::run_to_file("fullpath", "command string", append, copy_output);
+
+Example:
+ign::run_to_file(
+    "/tmp/logs/status.log",
+    "git status --short",
+    true,
+    true
+);
+
+Notes:
+The fourth argument controls whether output is also echoed to stdout
+while it is being written to the file.
+true  - print output to the console AND write it to the file
+false - write output to the file only
+
+Default:
+false
+
+This is useful when the user should see command output live (for example
+during an update check), while still keeping a copy in the log file.
+
+The vector/initializer_list overload accepts the same fourth argument:
+ign::run_to_file(
+    "/tmp/logs/status.log",
+    {"git", "status", "--short"},
+    true,
+    true
+);
+
+copy_output is not available on the multi-command overload
+(ign::run_to_file("fullpath", "command1", "command2", ...)).
+Call run_to_file() separately for a command that needs copy_output.
+
+
+ign::run_to_file("fullpath", "command1", "command2", "command3");
+
+Example:
+ign::run_to_file(
+    "/tmp/logs/setup.log",
+    "cmake -S . -B build",
+    "cmake --build build",
+    "ctest --test-dir build"
+);
+
+Notes:
+Multiple complete commands write to the same file.
+Every command is attempted.
+The first non-zero result is returned.
+Output is appended to the file.
+Output is not echoed to stdout for this overload.
+
+
+ign::run_shell_to_file("fullpath", "shell command");
+
+Example:
+ign::run_shell_to_file(
+    "/tmp/logs/matches.log",
+    "ls -la | grep cpp"
+);
+
+Notes:
+run_shell_to_file() works like run_shell(), but writes output to a file.
+Missing parent directories are created.
+The output file is created if it does not exist.
+Output is appended by default.
+
+
+ign::run_shell_to_file("fullpath", "shell command", false);
+
+Example:
+ign::run_shell_to_file(
+    "/tmp/logs/latest.log",
+    "echo fresh log",
+    false
+);
+
+Notes:
+false overwrites the output file.
+true appends to the output file.
+
+
+ign::run_shell_to_file("fullpath", "shell command", append, copy_output);
+
+Example:
+ign::run_shell_to_file(
+    "/tmp/logs/matches.log",
+    "ls -la | grep cpp",
+    true,
+    true
+);
+
+Notes:
+Same as run_to_file(): the fourth argument echoes output to stdout while
+also writing it to the file.
+
+Default:
+false
+
+
+ign::run_shell_to_file("fullpath", "command1", "command2", "command3");
+
+Example:
+ign::run_shell_to_file(
+    "/tmp/logs/shell.log",
+    "echo first && echo second",
+    "ls -la | grep cpp"
+);
+
+Notes:
+Multiple shell commands write to the same file.
+Every command is attempted.
+The first non-zero result is returned.
+Output is not echoed to stdout for this overload.
+
+
+USAGE EXAMPLE:
+
+#include <ign.hpp>
+
+int main() {
+    int code = ign::run({"echo", "hello from ign::run"});
+
+    if (code == 0) {
+        ign::println("command worked!");
+    } else {
+        ign::println("command failed!");
+    }
+
+    ign::run_to_file(
+        "/tmp/ign-run/output.log",
+        {"echo", "saved to file"},
+        false
+    );
+
+    ign::run_to_file(
+        "/tmp/ign-run/live_output.log",
+        "apt list --upgradable",
+        true,
+        true
+    );
+
+    ign::run_shell_to_file(
+        "/tmp/ign-run/shell.log",
+        "echo first && echo second",
+        false
+    );
+
+    return 0;
+}

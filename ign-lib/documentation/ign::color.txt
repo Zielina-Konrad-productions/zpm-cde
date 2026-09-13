@@ -1,0 +1,182 @@
+USAGE OF ign::color
+
+RETURN CODES:
+ign::color constants do not return values.
+
+FUNCTIONS:
+ign::color contains ANSI escape code constants.
+ign::color also contains RGB helpers for truecolor terminal output.
+
+
+IMPORTANT:
+Colors and styles work only in terminals that support ANSI escape codes.
+
+Always reset color after raw color output:
+ign::print(ign::color::RESET);
+
+The named print functions reset automatically.
+
+
+SYNTAX:
+
+ign::color::NAME
+
+Example:
+ign::print(ign::color::RED);
+ign::print("red text");
+ign::print(ign::color::RESET);
+
+
+REGULAR COLORS:
+BLACK
+RED
+GREEN
+YELLOW
+BLUE
+MAGENTA
+PURPLE
+PINK
+CYAN
+WHITE
+GREY
+ORANGE
+
+Example:
+ign::println(ign::color::PURPLE, "purple text", ign::color::RESET);
+ign::println(ign::color::PINK, "pink text", ign::color::RESET);
+
+
+BRIGHT COLORS:
+BRIGHT_RED
+BRIGHT_GREEN
+BRIGHT_YELLOW
+BRIGHT_BLUE
+BRIGHT_MAGENTA
+BRIGHT_PURPLE
+BRIGHT_PINK
+BRIGHT_CYAN
+BRIGHT_WHITE
+
+Examples:
+ign::println(ign::color::BRIGHT_BLUE, "bright blue", ign::color::RESET);
+ign::println(ign::color::BRIGHT_PURPLE, "bright purple", ign::color::RESET);
+ign::println(ign::color::BRIGHT_PINK, "bright pink", ign::color::RESET);
+
+
+BOLD COLORS:
+BOLD_BLACK
+BOLD_RED
+BOLD_GREEN
+BOLD_YELLOW
+BOLD_BLUE
+BOLD_MAGENTA
+BOLD_PURPLE
+BOLD_PINK
+BOLD_CYAN
+BOLD_WHITE
+BOLD_ORANGE
+
+Examples:
+ign::println(ign::color::BOLD_GREEN, "bold green", ign::color::RESET);
+ign::println(ign::color::BOLD_PURPLE, "bold purple", ign::color::RESET);
+ign::println(ign::color::BOLD_PINK, "bold pink", ign::color::RESET);
+
+
+BACKGROUND COLORS:
+BG_BLACK
+BG_RED
+BG_GREEN
+BG_YELLOW
+BG_BLUE
+BG_MAGENTA
+BG_PURPLE
+BG_PINK
+BG_CYAN
+BG_WHITE
+BG_ORANGE
+
+Examples:
+ign::println(ign::color::BG_BLUE, "blue background", ign::color::RESET);
+ign::println(ign::color::BG_PURPLE, "purple background", ign::color::RESET);
+ign::println(ign::color::BG_PINK, "pink background", ign::color::RESET);
+
+
+RGB COLORS:
+rgb(red, green, blue) - foreground RGB color
+bg_rgb(red, green, blue) - background RGB color
+bold_rgb(red, green, blue) - bold foreground RGB color
+
+Values are clamped to 0-255.
+
+Examples:
+ign::println(ign::color::rgb(255, 105, 180), "hot pink", ign::color::RESET);
+ign::println(
+    ign::color::bold_rgb(128, 0, 255),
+    "bold custom purple",
+    ign::color::RESET
+);
+ign::println(
+    ign::color::bg_rgb(20, 20, 20),
+    ign::color::rgb(255, 220, 100),
+    "custom foreground on custom background",
+    ign::color::RESET
+);
+
+
+TEXT STYLES:
+BOLD
+DIM
+ITALIC
+UNDERLINE
+BLINK
+REVERSE
+HIDDEN
+STRIKE
+
+Example:
+ign::println(ign::color::UNDERLINE, "underlined", ign::color::RESET);
+
+
+RESET:
+RESET
+
+Example:
+ign::print(ign::color::GREEN);
+ign::print("green");
+ign::print(ign::color::RESET);
+ign::println(" normal again");
+
+
+RELATED PRINT FUNCTIONS:
+Every color/style also generates stdout and stderr print helpers.
+
+Examples:
+ign::print_red("red");
+ign::println_bold_green("bold green");
+ign::println_bold_purple("bold purple");
+ign::println_pink("pink");
+ign::println_bold_pink("bold pink");
+ign::print_rewriteln_bold_orange("live status");
+ign::print_error_orange("orange error");
+ign::print_error_rewriteln_yellow("retry");
+ign::println_each_error_bold_orange("one", "two");
+ign::println_bg_blue("blue background");
+ign::println_underline("underlined");
+
+See:
+documentation/ign::print.txt
+
+
+USAGE EXAMPLE:
+
+#include <ign.hpp>
+
+int main() {
+    ign::print(ign::color::CYAN);
+    ign::print("manual cyan");
+    ign::print(ign::color::RESET);
+    ign::println(" normal");
+
+    ign::println_orange("automatic orange");
+    return 0;
+}

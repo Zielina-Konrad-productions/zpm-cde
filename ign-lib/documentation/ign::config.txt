@@ -1,0 +1,190 @@
+USAGE OF ign::config
+
+FUNCTIONS:
+ign::config::read() - read all values, check keys, or check key/value expressions
+ign::config::value() - read one value
+ign::config::read_keys() - read selected keys
+ign::config::replace() - replace a config item
+ign::config::exists() - check if a key exists
+ign::config::exists_all() - check if all keys exist
+ign::config::exists_any() - check if any key exists
+ign::config::read_int() - read an int value
+ign::config::read_double() - read a double value
+ign::config::read_bool() - read a bool value
+
+
+PATHS:
+
+Paths beginning with ~ are expanded to the current user's home directory.
+
+Example:
+ign::config::read("~/app.conf", "debug = true");
+
+Only ~ and ~/... are expanded. Paths such as ~otheruser/app.conf are left
+unchanged.
+
+
+FORMAT:
+
+By default ign::config reads lines in this format:
+
+key = value
+
+Empty lines are ignored.
+Lines beginning with # or ; are ignored.
+Keys and values are trimmed.
+Duplicate keys keep the last value.
+Invalid lines are skipped.
+
+
+EXAMPLE CONFIG:
+
+# app.conf
+name = demo
+port = 8080
+debug = true
+scale = 1.5
+
+
+SYNTAX:
+
+Read all values:
+
+ign::config::values data = ign::config::read("app.conf");
+
+Example:
+ign::println(data["name"]);
+
+
+Check whether a variable exists:
+
+if (ign::config::read("app.conf", "debug") == ign::status::ok) {
+    ign::println("debug option exists");
+}
+
+Check one option value:
+
+if (ign::config::read("app.conf", "debug = true") == ign::status::ok) {
+    ign::println("debug is enabled");
+}
+
+Check multiple options:
+
+if (ign::config::read(
+        "app.conf",
+        "name = demo",
+        "debug = true"
+    ) == ign::status::ok) {
+    ign::println("config matches");
+}
+
+
+Replace a config item:
+
+ign::config::replace("app.conf", "old name", "new name");
+
+This keeps the old value:
+
+old name = true
+
+becomes:
+
+new name = true
+
+Replace a config item and its value:
+
+ign::config::replace("app.conf", "debug = false", "debug = true");
+
+
+Read one value:
+
+std::string value = ign::config::value("app.conf", "name");
+
+With fallback:
+std::string value = ign::config::value("app.conf", "name", "default");
+
+
+Read selected keys:
+
+ign::config::values selected =
+    ign::config::read_keys("app.conf", "name", "port", "debug");
+
+The same function accepts a list:
+
+ign::config::values selected =
+    ign::config::read_keys("app.conf", {"name", "port", "debug"});
+
+
+Check if a key exists:
+
+if (ign::config::exists("app.conf", "debug")) {
+    ign::println("debug option exists");
+}
+
+Check multiple keys:
+
+if (ign::config::exists("app.conf", "name", "port")) {
+    ign::println("all required options exist");
+}
+
+if (ign::config::exists_all("app.conf", "name", "port", "debug")) {
+    ign::println("all selected options exist");
+}
+
+if (ign::config::exists_any("app.conf", "debug", "verbose")) {
+    ign::println("at least one selected option exists");
+}
+
+
+Typed reads:
+
+int port = ign::config::read_int("app.conf", "port", 3000);
+double scale = ign::config::read_double("app.conf", "scale", 1.0);
+bool debug = ign::config::read_bool("app.conf", "debug", false);
+
+Boolean true values:
+1, true, yes, on, enabled
+
+Boolean false values:
+0, false, no, off, disabled
+
+
+OPTIONS:
+
+ign::config::options options;
+
+options.separator = '=';
+options.comments = {"#", ";"};
+options.trim_keys = true;
+options.trim_values = true;
+options.inline_comments = false;
+options.allow_empty_keys = false;
+options.overwrite_existing = true;
+
+Use options:
+
+ign::config::options options;
+options.separator = ':';
+options.inline_comments = true;
+options.comments = {"#", "//"};
+
+std::string host =
+    ign::config::value("settings.conf", "host", "localhost", options);
+
+ign::config::values selected =
+    ign::config::read_keys("settings.conf", options, "host", "port");
+
+
+NOTES:
+
+read(path) returns std::map<std::string, std::string>.
+read(path, "key") returns ign::status::ok when the key exists.
+read(path, "key = value") returns ign::status::ok when the expression matches.
+read(path, "a", "b = 2") returns ign::status::ok only when every item matches.
+replace(path, old, new) returns ign::status::ok when at least one item was
+replaced.
+value(path, key) returns an empty string when the key is missing.
+value(path, key, fallback) returns fallback when the key is missing.
+read_int(), read_double(), and read_bool() return fallback when conversion fails.
+When inline_comments is true, a comment starts at the beginning of a value or
+after whitespace. This keeps values like https://example.com intact.

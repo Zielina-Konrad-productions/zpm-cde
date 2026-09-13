@@ -1,0 +1,171 @@
+USAGE OF ign::catalog
+
+STATUS:
+Most ign::catalog functions return ign::status:
+ign::status::ok
+ign::status::error
+ign::status::not_found
+ign::status::permission_denied
+
+FUNCTIONS:
+ign::catalog::create() - create directory
+ign::catalog::remove() - remove directory recursively
+ign::catalog::clear() - remove directory contents, but keep the directory
+ign::catalog::exists() - check if directory exists
+ign::catalog::empty() - check if directory exists and is empty
+ign::catalog::list() - list direct directory contents
+ign::catalog::copy() - copy directory recursively
+ign::catalog::move() - move or rename directory
+
+
+IMPORTANT:
+Paths beginning with ~ are expanded to the current user's home directory.
+
+Example:
+ign::catalog::create("~/projects/cache");
+
+Only ~ and ~/... are expanded. Paths such as ~otheruser/cache are left
+unchanged.
+
+Multiple arguments are separate paths.
+
+Example:
+ign::catalog::create("/tmp", "myfiles");
+
+This creates:
+/tmp
+./myfiles
+
+This does NOT create:
+/tmp/myfiles
+
+To create /tmp/myfiles use:
+ign::catalog::create("/tmp/myfiles");
+
+
+SYNTAX:
+
+ign::catalog::create("fullpath");
+
+Example:
+ign::catalog::create("/tmp/myfiles");
+
+Multiple paths:
+ign::catalog::create("/tmp/myfiles", "/tmp/myfiles2", "/tmp/photos");
+
+Notes:
+create() creates missing parent directories.
+An existing directory is treated as success.
+
+
+ign::catalog::remove("fullpath");
+
+Example:
+ign::catalog::remove("/tmp/myfiles");
+
+Multiple paths:
+ign::catalog::remove("/tmp/myfiles", "/tmp/myfiles2", "/tmp/photos");
+
+Notes:
+remove() removes the directory and everything inside it.
+A missing directory is treated as success.
+
+
+ign::catalog::clear("fullpath");
+
+Example:
+ign::catalog::clear("/tmp/myfiles");
+
+Multiple paths:
+ign::catalog::clear("/tmp/myfiles", "/tmp/myfiles2", "/tmp/photos");
+
+Notes:
+clear() removes everything inside the directory.
+The directory itself stays.
+A missing directory returns ign::status::not_found.
+
+
+ign::catalog::exists("fullpath");
+
+Example:
+ign::catalog::exists("/tmp/myfiles");
+
+Multiple paths:
+ign::catalog::exists("/tmp/myfiles", "/tmp/myfiles2", "/tmp/photos");
+
+Notes:
+exists() checks directories only, not regular files.
+With multiple paths it returns ign::status::ok only if every directory exists.
+
+
+ign::catalog::empty("fullpath");
+
+Example:
+ign::catalog::empty("/tmp/myfiles");
+
+Multiple paths:
+ign::catalog::empty("/tmp/myfiles", "/tmp/myfiles2", "/tmp/photos");
+
+Notes:
+empty() returns ign::status::ok only when the directory exists and is empty.
+With multiple paths it returns ign::status::ok only if every directory is empty.
+
+
+ign::catalog::list("fullpath");
+
+Example:
+auto entries = ign::catalog::list("/tmp/myfiles");
+
+for (const auto& entry : entries) {
+    ign::println(entry.string());
+}
+
+Notes:
+list() returns std::vector<std::filesystem::path>.
+Entries are direct children only, not recursive.
+Entries are returned as full paths.
+An empty vector is returned when the directory is empty or cannot be read.
+
+
+ign::catalog::copy("source", "destination");
+
+Example:
+ign::catalog::copy("/tmp/myfiles", "/tmp/myfiles_backup");
+
+Notes:
+copy() copies a directory recursively.
+Missing parent directories for the destination are created.
+Existing files in the destination may be overwritten.
+
+
+ign::catalog::move("source", "destination");
+
+Example:
+ign::catalog::move("/tmp/myfiles", "/tmp/archive/myfiles");
+
+Notes:
+move() renames or moves a directory.
+Missing parent directories for the destination are created.
+Moving between filesystems uses copy() and remove() internally.
+
+
+USAGE EXAMPLE:
+
+#include <ign.hpp>
+
+int main() {
+    if (ign::catalog::exists("/tmp/files") == ign::status::ok) {
+        ign::println("catalog exists!");
+    } else {
+        ign::println("catalog not found!");
+    }
+
+    ign::catalog::create("/tmp/files/cache");
+    ign::catalog::clear("/tmp/files/cache");
+
+    for (const auto& entry : ign::catalog::list("/tmp/files")) {
+        ign::println(entry.string());
+    }
+
+    return 0;
+}

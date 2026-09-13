@@ -1,0 +1,189 @@
+USAGE OF ign::random
+
+RETURN CODES:
+ign::random helpers return values directly.
+They do not use the 0/1/2 status-code style.
+
+FUNCTIONS:
+ign::random::engine()  - access the shared std::mt19937_64 engine
+ign::random::seed()    - set a deterministic seed
+ign::random::reseed()  - seed again from system entropy and clock
+ign::random::integer() - random integer
+ign::random::real()    - random floating-point number
+ign::random::number()  - random arithmetic number
+ign::random::boolean() - random bool
+ign::random::chance()  - random bool for probability checks
+ign::random::index()   - random index for a sequence size
+ign::random::choice()  - pointer to a random container element
+ign::random::shuffle() - shuffle a range or container
+ign::random::bytes()   - pseudo-random bytes
+ign::random::string()  - random string from an alphabet
+ign::random::hex()     - random lowercase hexadecimal string
+
+
+IMPORTANT:
+ign::random uses a shared std::mt19937_64 pseudo-random engine.
+It is useful for games, simulations, test data, and general utilities.
+Do not use it for passwords, tokens, encryption keys, or other cryptographic
+secrets.
+
+Integer ranges are inclusive: [min, max].
+Real-number ranges are half-open: [min, max).
+If min is greater than max, the values are swapped.
+
+
+SYNTAX:
+
+ign::random::seed(value);
+
+Example:
+ign::random::seed(1234);
+
+Notes:
+seed() makes later random values reproducible.
+
+
+ign::random::reseed();
+
+Example:
+ign::random::reseed();
+
+Notes:
+reseed() returns the shared engine to non-deterministic use.
+
+
+ign::random::integer(min, max);
+ign::random::integer(max);
+
+Example:
+int roll = ign::random::integer(1, 6);
+int level = ign::random::integer(10);
+
+Notes:
+integer(1, 6) can return 1 or 6.
+integer(10) returns a value from 0 to 10.
+
+
+ign::random::real(min, max);
+ign::random::real();
+
+Example:
+double temperature = ign::random::real(-5.0, 5.0);
+double unit = ign::random::real();
+
+Notes:
+real() returns a double from 0.0 to 1.0.
+The upper bound is not included.
+
+
+ign::random::number(min, max);
+ign::random::number(max);
+
+Example:
+auto value = ign::random::number(1, 100);
+auto ratio = ign::random::number(1.0);
+
+Notes:
+number() chooses integer or real behavior based on the argument type.
+
+
+ign::random::boolean();
+ign::random::boolean(probability);
+ign::random::chance(probability);
+
+Example:
+if (ign::random::chance(0.25)) {
+    ign::println("one in four");
+}
+
+Notes:
+Probability is clamped to the range 0.0 to 1.0.
+boolean() uses 0.5 by default.
+
+
+ign::random::index(count);
+
+Example:
+std::vector<std::string> names = {"Ada", "Bjarne", "Grace"};
+std::size_t selected = ign::random::index(names.size());
+
+Notes:
+index(count) returns a value from 0 to count - 1.
+For count == 0, it returns 0.
+
+
+ign::random::choice(container);
+
+Example:
+std::vector<std::string> names = {"Ada", "Bjarne", "Grace"};
+
+if (const std::string* name = ign::random::choice(names)) {
+    ign::println(*name);
+}
+
+Notes:
+choice() returns a pointer to an element.
+It returns nullptr when the container is empty.
+
+
+ign::random::shuffle(container);
+ign::random::shuffle(first, last);
+
+Example:
+std::vector<int> values = {1, 2, 3, 4};
+ign::random::shuffle(values);
+
+Notes:
+shuffle() needs a random-access container or iterator range, such as
+std::vector, std::array, or std::string.
+
+
+ign::random::bytes(count);
+ign::random::bytes(output, count);
+
+Example:
+auto data = ign::random::bytes(16);
+
+unsigned char buffer[8] = {};
+ign::random::bytes(buffer, 8);
+
+Notes:
+bytes() returns pseudo-random bytes.
+They are not cryptographic random bytes.
+
+
+ign::random::string(length);
+ign::random::string(length, alphabet);
+
+Example:
+std::string id = ign::random::string(12);
+std::string pin = ign::random::string(4, "0123456789");
+
+Notes:
+The default alphabet contains lowercase letters, uppercase letters, and digits.
+If alphabet is empty, string() returns an empty string.
+
+
+ign::random::hex(length);
+
+Example:
+std::string color = ign::random::hex(6);
+
+Notes:
+hex() returns lowercase hexadecimal characters.
+
+
+USAGE EXAMPLE:
+
+#include <ign.hpp>
+
+int main() {
+    int roll = ign::random::integer(1, 6);
+    std::string token = ign::random::hex(12);
+
+    if (ign::random::chance(0.5)) {
+        ign::println("roll: ", roll, " token: ", token);
+    }
+
+    return 0;
+}

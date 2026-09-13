@@ -1,0 +1,63 @@
+USAGE OF ign variables/types
+
+RETURN CODES:
+ign::string does not return status codes.
+
+TYPES:
+ign::string - std::string-like type that reads a full line with spaces
+
+
+IMPORTANT:
+std::string with ign::input() reads one word.
+ign::string with ign::input() reads the whole line.
+
+Pressing Enter without typing anything stores an empty string.
+
+
+SYNTAX:
+
+ign::string variable;
+
+Example:
+ign::string text;
+ign::input(text);
+
+if (text.empty()) {
+    ign::println("empty");
+}
+
+
+ign::string works like std::string.
+
+Example:
+ign::string message = "hello";
+message += " world";
+
+std::size_t length = message.size();
+std::string copy = message;
+
+
+ign::string can be used as a path.
+
+Example:
+ign::string path = "/tmp/message.txt";
+ign::file::overwrite(path, "hello");
+ign::file::write(path, " again");
+
+Notes:
+ign::string has a conversion operator to std::filesystem::path.
+
+
+USAGE EXAMPLE:
+
+#include <ign.hpp>
+
+int main() {
+    ign::string name;
+
+    ign::print("Full name: ");
+    ign::input(name);
+
+    ign::println("Hello, ", name);
+    return 0;
+}

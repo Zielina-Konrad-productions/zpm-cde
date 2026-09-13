@@ -1,0 +1,425 @@
+USAGE OF ign::file
+
+STATUS:
+Most ign::file functions return ign::status:
+ign::status::ok
+ign::status::error
+ign::status::not_found
+ign::status::permission_denied
+
+FUNCTIONS:
+ign::file::create() - create file
+ign::file::remove() - remove file
+ign::file::copy() - copy file
+ign::file::move() - move or rename file
+ign::file::exists() - check if file exists
+ign::file::read() - read the complete file contents
+ign::file::read_to() - read file contents and return a status
+ign::file::dimensions() - get text rows and columns of a file
+ign::file::width() - get maximum visible line width of a text file
+ign::file::height() - get visible line count of a text file
+ign::file::contains() - search text inside file
+ign::file::print() - print file contents
+ign::file::println() - print file contents and add a newline
+ign::file::print_column() - print multiline file aligned to a column
+ign::file::println_column() - print multiline file aligned to a column and add a newline
+ign::file::print_at() - move cursor and print multiline file from row and column
+ign::file::println_at() - move cursor and print multiline file from row and column and add a newline
+ign::file::print_red() - print file contents with a style/color
+ign::file::println_red() - print styled file contents and add a newline
+ign::file::print_loopstart() - start live file printing
+ign::file::print_loopend() - stop live file printing
+ign::file::overwrite() - overwrite file
+ign::file::write() - write text at the end of a file
+ign::file::write_line() - write one line at the end of a file
+ign::file::write_lines() - write multiple lines at the end of a file
+ign::file::replace() - replace matching lines
+ign::file::replace_first() - replace first matching line
+ign::file::encrypt() - encrypt file with a password
+ign::file::decrypt() - decrypt file with a password
+
+
+IMPORTANT:
+ign::file works with regular files.
+For directories use ign::catalog.
+Writing helpers are implemented in modules/write.hpp, but they still use the
+ign::file namespace and are included by <ign.hpp>.
+Encryption helpers are implemented in modules/encrypt.hpp. They also use the
+ign::file namespace and are included by <ign.hpp>.
+
+Paths beginning with ~ are expanded to the current user's home directory.
+
+Example:
+ign::file::write("~/notes.txt", "hello");
+
+Only ~ and ~/... are expanded. Paths such as ~otheruser/file are left
+unchanged.
+
+Multiple arguments are separate paths.
+
+Example:
+ign::file::create("/tmp/first.txt", "second.txt");
+
+This creates:
+/tmp/first.txt
+./second.txt
+
+This does NOT create:
+/tmp/second.txt
+
+To create /tmp/second.txt use:
+ign::file::create("/tmp/second.txt");
+
+
+SYNTAX:
+
+ign::file::create("fullpath");
+
+Example:
+ign::file::create("/tmp/myfile.txt");
+
+Multiple paths:
+ign::file::create("/tmp/file1.txt", "/tmp/file2.txt", "/tmp/file3.txt");
+
+Notes:
+create() creates missing parent directories.
+An existing file is not overwritten.
+
+
+ign::file::remove("fullpath");
+
+Example:
+ign::file::remove("/tmp/myfile.txt");
+
+Multiple paths:
+ign::file::remove("/tmp/file1.txt", "/tmp/file2.txt", "/tmp/file3.txt");
+
+Notes:
+remove() removes regular files only.
+A missing file is treated as success.
+Directories return ign::status::error. Use ign::catalog::remove() for
+directories.
+
+
+ign::file::copy("source", "destination");
+
+Example:
+ign::file::copy("/tmp/myfile.txt", "/tmp/backup/myfile.txt");
+
+Notes:
+copy() copies regular files only.
+Missing parent directories for the destination are created.
+An existing destination file is overwritten.
+
+
+ign::file::move("source", "destination");
+
+Example:
+ign::file::move("/tmp/myfile.txt", "/tmp/archive/myfile.txt");
+
+Notes:
+move() moves or renames regular files only.
+Missing parent directories for the destination are created.
+Moving between filesystems uses copy() and remove() internally.
+
+
+ign::file::exists("fullpath");
+
+Example:
+ign::file::exists("/tmp/myfile.txt");
+
+Multiple paths:
+ign::file::exists("/tmp/file1.txt", "/tmp/file2.txt", "/tmp/file3.txt");
+
+Notes:
+exists() checks regular files only, not directories.
+With multiple paths it returns ign::status::ok only if every file exists.
+
+
+ign::file::read("fullpath");
+
+Example:
+std::string text = ign::file::read("/tmp/myfile.txt");
+
+Notes:
+read(path) returns the complete file contents.
+An empty string is returned when the file is empty or cannot be read.
+
+
+ign::file::read_to("fullpath", text);
+
+Example:
+std::string text;
+ign::status result = ign::file::read_to("/tmp/myfile.txt", text);
+
+if (result == ign::status::ok) {
+    ign::println(text);
+}
+
+Notes:
+read_to(path, text) writes the complete file contents into text.
+It clears text before reading.
+It returns ign::status::ok only when the file was read successfully.
+
+
+ign::file::dimensions("fullpath");
+ign::file::width("fullpath");
+ign::file::height("fullpath");
+
+Example:
+auto size = ign::file::dimensions("ascii_art/title.txt");
+ign::println("rows: ", size.rows);
+ign::println("columns: ", size.columns);
+
+Manual cursor positioning from the top-right:
+const auto path = "ascii_art/podmiot_liryczny.txt";
+ign::terminal::cursor::top_right();
+ign::terminal::cursor::down(4);
+ign::terminal::cursor::left(ign::file::width(path) + 6);
+ign::file::print(path);
+
+Notes:
+dimensions() returns rows, columns, and available.
+width() returns the maximum visible line width.
+height() returns the visible line count.
+When the file cannot be read, dimensions().available is false and width() /
+height() return 0.
+
+
+ign::file::contains("fullpath", "searched text");
+
+Example:
+if (ign::file::contains("/tmp/config.txt", "enabled = true") ==
+    ign::status::ok) {
+    ign::println("enabled");
+}
+
+Notes:
+contains(path, text) returns ign::status::ok when text is found.
+It returns ign::status::not_found when the file or text is not found.
+It returns ign::status::permission_denied when permission is denied.
+
+
+ign::file::print("fullpath");
+
+Example:
+ign::file::print("/tmp/myfile.txt");
+
+Notes:
+print() prints the complete file contents to standard output.
+No extra newline is added.
+It starts where the cursor currently is. For multiline files, every next line
+starts at the same cursor column.
+Use print_column() or print_at() if you want to set the position in one call.
+
+Example with manual cursor movement:
+ign::terminal::cursor::down(3);
+ign::file::print("ascii_art/title.txt");
+
+
+ign::file::println("fullpath");
+
+Example:
+ign::file::println("/tmp/myfile.txt");
+
+Notes:
+println() prints the complete file contents to standard output and then adds
+one newline. Multiline text keeps the same starting cursor column.
+
+
+ign::file::print_column(column, "fullpath");
+ign::file::println_column(column, "fullpath");
+
+Example:
+ign::terminal::cursor::top_left();
+ign::file::print_column(6, "ascii_art/title.txt");
+
+Notes:
+print_column() prints the file at the current row and moves to the given
+1-based column before printing. After every newline inside the file, the cursor
+returns to the same column.
+This is useful for multiline ASCII art.
+Zero is treated as column 1.
+
+
+ign::file::print_at(row, column, "fullpath");
+ign::file::println_at(row, column, "fullpath");
+
+Example:
+ign::file::print_at(3, 6, "ascii_art/title.txt");
+
+Notes:
+print_at() first moves the cursor to row and column, then prints the file.
+After every newline inside the file, the next line starts at the same column.
+Zero is treated as 1.
+
+
+ign::file::print_red("fullpath");
+ign::file::println_bold("fullpath");
+ign::file::print_column_red(column, "fullpath");
+ign::file::print_at_bright_green(row, column, "fullpath");
+
+Example:
+ign::file::print_red("ascii_art/warning.txt");
+ign::file::println_bold_orange("ascii_art/title.txt");
+ign::file::print_at_bright_green(3, 6, "ascii_art/frame.txt");
+
+Notes:
+Styled file print functions use the same style names as ign::print:
+red, green, yellow, blue, magenta, purple, pink, cyan, white, grey, orange,
+bright_red, bright_green, bright_yellow, bright_blue, bright_magenta,
+bright_purple, bright_pink, bright_cyan, bright_white, bold_red, bold_green,
+bold_yellow, bold_blue, bold_magenta, bold_purple, bold_pink, bold_cyan,
+bold_white, bold_orange, bold, dim, italic, underline, blink, reverse, hidden,
+strike, and the
+background colors.
+Styled variants also exist for print_column_NAME(), println_column_NAME(),
+print_at_NAME(), and println_at_NAME().
+
+
+ign::file::print_loopstart("fullpath", line_count);
+ign::file::print_loopend();
+
+Example:
+ign::file::print_loopstart("/tmp/log.txt", 3);
+
+while (!ign::key::is_pressed('q')) {
+    ign::sleep(50);
+}
+
+ign::key::restore();
+ign::file::print_loopend();
+
+Notes:
+print_loopstart() refreshes the last line_count lines in place.
+Only one file print loop can be active at a time.
+Always call print_loopend() when finished.
+Avoid writing other output while the live view is active.
+
+
+ign::file::overwrite("fullpath", "content");
+
+Example:
+ign::file::overwrite("/tmp/myfile.txt", "hello");
+
+Multiple lines:
+ign::file::overwrite("/tmp/myfile.txt", {"first line", "second line"});
+
+Notes:
+overwrite() overwrites the file.
+Missing parent directories are created.
+When using a list of lines, no newline is added after the final line.
+Lines in the list cannot contain '\n' or '\r'.
+
+
+ign::file::write("fullpath", "content");
+
+Example:
+ign::file::write("/tmp/myfile.txt", "same line");
+
+Write one line:
+ign::file::write_line("/tmp/myfile.txt", "hello");
+
+Multiple lines:
+ign::file::write_lines("/tmp/myfile.txt", {"first line", "second line"});
+
+Notes:
+write() writes text at the end of a file exactly as provided.
+write_line() writes content followed by a newline.
+Missing parent directories are created.
+When using a list of lines, every line gets its own newline.
+Lines in the list cannot contain '\n' or '\r'.
+
+
+ign::file::replace("fullpath", "old line", "new line");
+
+Example:
+ign::file::replace(
+    "/tmp/config.txt",
+    "enabled = false",
+    "enabled = true"
+);
+
+Replace one line with multiple lines:
+ign::file::replace(
+    "/tmp/config.txt",
+    "old setting",
+    {"new setting", "extra setting"}
+);
+
+Notes:
+replace() replaces every line exactly matching old line.
+Partial lines are not matched.
+File line endings are preserved.
+old line and new lines cannot contain '\n' or '\r'.
+The new lines list cannot be empty.
+
+
+ign::file::replace_first("fullpath", "old line", "new line");
+
+Example:
+ign::file::replace_first(
+    "/tmp/config.txt",
+    "mode = old",
+    "mode = new"
+);
+
+Replace one line with multiple lines:
+ign::file::replace_first(
+    "/tmp/config.txt",
+    "old setting",
+    {"new setting", "extra setting"}
+);
+
+Notes:
+replace_first() replaces only the first exactly matching line.
+Status values are the same as replace().
+
+
+ign::file::encrypt("source", "destination", "password");
+
+Example:
+ign::file::encrypt("/tmp/secret.txt", "/tmp/secret.ign", "my password");
+
+Default destination:
+ign::file::encrypt("/tmp/secret.txt", "my password");
+
+
+ign::file::decrypt("source", "destination", "password");
+
+Example:
+ign::file::decrypt("/tmp/secret.ign", "/tmp/secret.txt", "my password");
+
+Default destination:
+ign::file::decrypt("/tmp/secret.ign", "my password");
+
+Notes:
+encrypt() and decrypt() use vendored Monocypher from third_party.
+Include <ign.hpp>; no extra library link flag is required.
+The source and destination paths must be different.
+encrypt(path, password) writes to path + ".ign".
+decrypt(path, password) writes to path without ".ign" when the source path
+ends with ".ign". Otherwise it writes to path + ".dec".
+An empty password returns ign::status::error.
+Wrong passwords, damaged encrypted files, and modified encrypted files return
+ign::status::error while decrypting.
+
+
+USAGE EXAMPLE:
+
+#include <ign.hpp>
+
+int main() {
+    ign::file::overwrite("/tmp/files/message.txt", "hello");
+    ign::file::copy("/tmp/files/message.txt", "/tmp/files/backup.txt");
+    ign::file::move("/tmp/files/backup.txt", "/tmp/files/archive.txt");
+
+    if (ign::file::exists("/tmp/files/archive.txt") == ign::status::ok) {
+        ign::println("file exists!");
+    } else {
+        ign::println("file not found!");
+    }
+
+    ign::println(ign::file::read("/tmp/files/archive.txt"));
+    return 0;
+}

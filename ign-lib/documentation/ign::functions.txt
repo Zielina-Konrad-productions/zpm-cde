@@ -1,0 +1,192 @@
+USAGE OF ign helper functions
+
+RETURN CODES:
+These helpers usually return bool, void, or std::vector<std::string>.
+They do not use the 0/1/2 status-code style.
+
+FUNCTIONS:
+ign::args_init()  - store command line arguments
+ign::args()  - get or check command line arguments
+ign::args_any()  - true if any specified argument was passed
+ign::args_all()  - true if all specified arguments were passed
+ign::args_none() - true if none of the specified arguments were passed
+ign::input() - read input from stdin
+ign::any()   - true if any argument is true
+ign::all()   - true if all arguments are true
+ign::none()  - true if no argument is true
+
+
+IMPORTANT:
+Call ign::args_init(argc, argv) once near the start of main()
+if you want to use ign::args() later.
+
+Or use ign::args(argc, argv) to initialize and get arguments in one call.
+
+
+SYNTAX:
+
+ign::args_init(argc, argv);
+
+Example:
+int main(int argc, char** argv) {
+    ign::args_init(argc, argv);
+
+    if (ign::args("--help")) {
+        ign::println("help");
+    }
+}
+
+Notes:
+args_init() stores command line arguments for later ign::args() calls.
+
+
+ign::args();
+
+Example:
+auto arguments = ign::args();
+
+for (const auto& argument : arguments) {
+    ign::println(argument);
+}
+
+Notes:
+args() returns std::vector<std::string>.
+The program name is skipped.
+
+
+ign::args("argument");
+
+Example:
+if (ign::args("--full")) {
+    ign::println("full mode");
+}
+
+Notes:
+args("argument") returns true when the exact argument was passed.
+It checks stored arguments from ign::args_init() or ign::args(argc, argv).
+
+
+ign::args(argc, argv);
+
+Example:
+int main(int argc, char** argv) {
+    auto arguments = ign::args(argc, argv);
+}
+
+Notes:
+args(argc, argv) stores the arguments and returns them.
+The program name is skipped by default.
+
+
+ign::args(argc, argv, true);
+
+Example:
+auto all_arguments = ign::args(argc, argv, true);
+
+Notes:
+Passing true includes the program name in the returned vector.
+
+
+ign::args_any("argument", ...);
+
+Example:
+if (ign::args_any("--full", "-y", "--bam")) {
+    ign::println("at least one selected argument was passed");
+}
+
+Notes:
+args_any() returns true when at least one exact argument was passed.
+
+
+ign::args_all("argument", ...);
+
+Example:
+if (ign::args_all("--full", "-y")) {
+    ign::println("both arguments were passed");
+}
+
+Notes:
+args_all() returns true only when every exact argument was passed.
+
+
+ign::args_none("argument", ...);
+
+Example:
+if (ign::args_none("--help", "--version")) {
+    ign::println("normal mode");
+}
+
+Notes:
+args_none() returns true when none of the exact arguments were passed.
+
+
+ign::input(variable);
+
+Example:
+int age = 0;
+ign::input(age);
+
+Notes:
+input() uses operator>>.
+For std::string, it reads one word only.
+For full lines with spaces, use ign::string.
+
+
+ign::any(values...);
+
+Example:
+if (ign::any(age < 18, age > 65)) {
+    ign::println("outside range");
+}
+
+Notes:
+any() returns true when at least one argument is true.
+
+
+ign::all(values...);
+
+Example:
+if (ign::all(age >= 18, age <= 65)) {
+    ign::println("inside range");
+}
+
+Notes:
+all() returns true when every argument is true.
+
+
+ign::none(values...);
+
+Example:
+if (ign::none(has_errors, has_warnings)) {
+    ign::println("clean");
+}
+
+Notes:
+none() returns true when no argument is true.
+
+
+USAGE EXAMPLE:
+
+#include <ign.hpp>
+
+int main(int argc, char** argv) {
+    ign::args_init(argc, argv);
+
+    if (ign::args("--verbose")) {
+        ign::println("verbose mode");
+    }
+
+    if (ign::args_any("--full", "-y", "--yes")) {
+        ign::println("automatic mode");
+    }
+
+    int age = 0;
+    ign::print("Age: ");
+    ign::input(age);
+
+    if (ign::all(age >= 18, age <= 65)) {
+        ign::println("standard age range");
+    }
+
+    return 0;
+}

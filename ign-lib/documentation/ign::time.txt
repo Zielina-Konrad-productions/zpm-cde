@@ -1,0 +1,79 @@
+USAGE OF ign::time
+
+RETURN CODES:
+Time helper functions return void.
+
+FUNCTIONS:
+ign::sleep(milliseconds) - sleep for a number of milliseconds
+ign::sleep(duration)     - sleep for a std::chrono duration
+ign::sleep_ns()          - sleep for nanoseconds
+ign::sleep_us()          - sleep for microseconds
+ign::sleep_ms()          - sleep for milliseconds
+ign::sleep_sec()         - sleep for seconds
+ign::sleep_min()         - sleep for minutes
+
+
+IMPORTANT:
+Numeric values are treated as milliseconds.
+Use ign::sleep(200) instead of:
+std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+Use the unit-named helpers when readability matters:
+ign::sleep_ms(200);
+ign::sleep_sec(2);
+
+
+SYNTAX:
+
+ign::sleep(milliseconds);
+
+Example:
+ign::sleep(200);
+
+Notes:
+This sleeps for 200 milliseconds.
+
+
+ign::sleep(duration);
+
+Example:
+ign::sleep(std::chrono::seconds(1));
+
+Notes:
+This accepts any std::chrono duration.
+
+
+ign::sleep_ms(milliseconds);
+ign::sleep_sec(seconds);
+
+Example:
+ign::sleep_ms(250);
+ign::sleep_sec(2);
+ign::sleep_sec(0.5);
+
+Notes:
+Unit-named helpers accept integer or floating-point values.
+
+
+ign::sleep_ns(nanoseconds);
+ign::sleep_us(microseconds);
+ign::sleep_min(minutes);
+
+Example:
+ign::sleep_us(500);
+ign::sleep_min(1);
+
+
+USAGE EXAMPLE:
+
+#include <ign.hpp>
+
+int main() {
+    for (int i = 0; i <= 100; ++i) {
+        ign::print_rewriteln_green("Progress: ", i, "%");
+        ign::sleep(50);
+    }
+
+    ign::println_rewriteln_green("Done");
+    return 0;
+}

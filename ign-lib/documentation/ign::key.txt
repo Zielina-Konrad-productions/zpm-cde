@@ -1,0 +1,160 @@
+USAGE OF ign::key
+
+RETURN CODES:
+ign::key::read() returns the key code.
+ign::key::wait() returns the key code.
+ign::key::wait('key') returns bool.
+ign::key::poll() returns the key code or ign::key::no_key.
+ign::key::is_pressed() returns bool.
+ign::key::restore() returns void.
+ign::key::sequence::push() returns bool.
+ign::key::sequence("text") returns bool in conditions.
+
+CONSTANTS:
+ign::key::no_key - returned by poll() when no key is waiting
+
+FUNCTIONS:
+ign::key::read()     - wait for one key
+ign::key::wait()     - wait for one key
+ign::key::wait('key') - wait for one specific key
+ign::key::poll()     - read one key without blocking
+ign::key::is_pressed() - check one specific key without blocking
+ign::key::restore()  - restore the terminal after poll/is_pressed
+ign::key::sequence()   - recognize a sequence of keys
+
+
+IMPORTANT:
+read(), wait(), poll(), and is_pressed() read terminal key events.
+
+Special keys such as arrows may produce multiple numeric codes.
+Holding a key depends on the operating system's key-repeat settings.
+
+is_pressed() consumes the expected key when it is waiting.
+Other waiting keys stay available for later checks.
+poll() and is_pressed() keep the terminal ready for live key input.
+Call restore() when you finish live key input and want normal terminal input.
+
+
+SYNTAX:
+
+ign::key::read();
+ign::key::wait();
+
+Example:
+int key = ign::key::read();
+
+if (key == 'q') {
+    ign::println("quit");
+}
+
+Notes:
+read() waits until a key is pressed.
+wait() without arguments does the same thing.
+Enter is not required.
+
+
+ign::key::wait('key');
+
+Example:
+if (ign::key::wait('q')) {
+    ign::println("quit");
+}
+
+Notes:
+wait('key') waits until that exact key is pressed.
+This is the intuitive form for a one-time if statement.
+
+
+ign::key::poll();
+
+Example:
+int key = ign::key::poll();
+
+if (key != ign::key::no_key) {
+    ign::println("key: ", key);
+}
+
+Notes:
+poll() does not wait.
+It returns ign::key::no_key when no key is available.
+After using poll() in a loop, call ign::key::restore().
+
+
+ign::key::is_pressed('key');
+
+Example:
+if (ign::key::is_pressed('q')) {
+    ign::println("quit");
+}
+
+Notes:
+is_pressed() is a short helper around poll().
+It consumes the expected key when it is waiting.
+Other keys are kept available, so several is_pressed() checks can be used in
+the same loop.
+After using is_pressed() in a loop, call ign::key::restore().
+
+
+ign::key::restore();
+
+Example:
+ign::key::restore();
+
+Notes:
+restore() returns the terminal to normal input mode after poll() or is_pressed().
+The terminal is also restored automatically when the program exits.
+
+
+ign::key::sequence name("text");
+name.push(key);
+name.reset();
+
+Example:
+ign::key::sequence quit("exit");
+
+while (true) {
+    int key = ign::key::poll();
+
+    if (quit.push(key)) {
+        ign::println("exit sequence entered");
+        ign::key::restore();
+        break;
+    }
+}
+
+Notes:
+sequence detects consecutive characters.
+push() returns true when the full sequence was entered.
+After a match, the sequence buffer is cleared.
+reset() clears the current entered buffer.
+
+
+ign::key::sequence("text");
+
+Example:
+while (true) {
+    if (ign::key::sequence("R1")) {
+        ign::println("R1 selected");
+        ign::key::restore();
+        break;
+    }
+}
+
+Notes:
+This shortcut is non-blocking and remembers typed characters between calls.
+Use double quotes for text sequences. For example, write "R1", not 'R1'.
+
+
+USAGE EXAMPLE:
+
+#include <ign.hpp>
+
+int main() {
+    ign::println("Press q to quit");
+
+    if (ign::key::wait('q')) {
+        ign::println("bye");
+    }
+
+    return 0;
+}

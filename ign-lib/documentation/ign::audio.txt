@@ -1,0 +1,127 @@
+USAGE OF ign::audio
+
+ign::audio is a lightweight audio helper for Windows and Linux.
+
+ign::audio uses the local vendored SFML helper first when it exists:
+
+    third_party/SFML/bin/ign-sfml-audio-player
+
+That helper is linked with the local SFML Audio build, so normal programs using
+ign::audio do not have to add -lsfml-audio or -lsfml-system.
+
+The bundled SFML source and static audio libraries live in:
+
+    third_party/SFML
+
+The helper source and rebuild script live in:
+
+    third_party/ign_sfml_audio_player
+
+If SFML is not available, the module keeps the old behavior. On Windows it can
+use the native WinMM PlaySoundW backend for WAV files. On Linux/macOS it starts
+an installed command-line player without using the shell.
+
+Linux fallback order:
+paplay
+pw-play
+ffplay
+aplay
+play
+
+Supported file formats depend on the selected backend. SFML and ffplay support
+more formats than the minimal native/player backends.
+
+Advanced:
+Define IGN_AUDIO_ENABLE_INPROCESS_SFML before including ign.hpp to use sf::Music
+directly inside the current process. In that mode your program must be linked
+with the SFML libraries. The default helper mode avoids that requirement.
+
+
+FUNCTIONS:
+ign::audio::available() - true when a supported player is found
+ign::audio::player() - selected backend/player name, or empty string
+ign::audio::set_volume() - set master volume from 0 to 100
+ign::audio::get_volume() - get master volume
+ign::audio::volume() - short alias for get_volume()
+ign::audio::set_muted() - enable or disable muting
+ign::audio::is_muted() - true when audio is muted
+ign::audio::mute() - mute audio
+ign::audio::unmute() - unmute audio
+ign::audio::stop_loop() - stop playback started by play_loop()
+ign::audio::stop_all() - stop tracked SFML playback
+ign::audio::play() - play and wait until finished
+ign::audio::play_async() - start playback in the background
+ign::audio::play_loop() - start looped playback in the background
+
+
+RETURN VALUES:
+ign::status::ok - playback started or finished successfully
+ign::status::not_found - audio file was not found
+ign::status::permission_denied - audio file or player could not be accessed
+ign::status::error - no player found, unsupported file, or player error
+
+
+PATH STYLE:
+Paths beginning with ~ are expanded to the current user's home directory.
+
+Example:
+ign::audio::play("~/sounds/start.wav");
+
+
+SYNTAX:
+
+ign::audio::available();
+
+Example:
+if (ign::audio::available()) {
+    ign::println("audio player: ", ign::audio::player());
+}
+
+
+ign::audio::play("sound.wav");
+ign::audio::play("sound.wav", 50.0f);
+
+Example:
+const ign::status result = ign::audio::play("assets/hit.wav");
+if (result != ign::status::ok) {
+    ign::println("could not play sound");
+}
+
+Notes:
+play() waits until the sound finishes.
+
+
+ign::audio::play_async("sound.wav");
+ign::audio::play_async("sound.wav", 35.0f);
+
+Example:
+ign::audio::play_async("assets/click.wav");
+
+Notes:
+play_async() starts a background process and returns after it starts. This is
+usually better for game sound effects.
+
+
+ign::audio::play_loop("music.ogg");
+ign::audio::play_loop("music.ogg", 45.0f);
+ign::audio::stop_loop();
+
+Example:
+ign::audio::play_loop("assets/music.ogg", 35.0f);
+
+Notes:
+play_loop() starts looped playback in the background. With the bundled SFML
+backend, looping is handled inside SFML, so the file is not restarted manually
+by game code. Use stop_loop() to stop looped playback, or stop_all() to stop
+tracked looped playback and tracked in-process SFML playback.
+
+
+ign::audio::set_volume(40.0f);
+
+Example:
+ign::audio::set_volume(75.0f);
+ign::audio::play_async("assets/click.wav", 50.0f);
+
+Notes:
+Volume values are clamped to 0..100. The master volume and per-call volume are
+multiplied together. For example, master 50 and per-call 50 gives output 25.

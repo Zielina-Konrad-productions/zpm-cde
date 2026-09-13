@@ -1,0 +1,109 @@
+USAGE OF ign::file ENCRYPTION
+
+HEADER:
+modules/encrypt.hpp
+
+NAMESPACE:
+ign::file
+
+The functions are stored in modules/encrypt.hpp, but the syntax stays:
+ign::file::encrypt()
+ign::file::decrypt()
+
+
+IMPORTANT:
+These helpers use the vendored Monocypher files from third_party.
+You only need to include <ign.hpp>. No extra library link flag is required.
+
+Build example:
+g++ -std=c++17 -I./ign-lib main.cpp -o app
+
+Paths beginning with ~ are expanded to the current user's home directory.
+
+Example:
+ign::file::encrypt("~/secret.txt", "password");
+
+Only ~ and ~/... are expanded. Paths such as ~otheruser/secret.txt are left
+unchanged.
+
+
+FUNCTIONS:
+ign::file::encrypt() - encrypt a file using a password
+ign::file::decrypt() - decrypt a file using the same password
+
+
+STATUS:
+encrypt() and decrypt() return ign::status.
+ign::status::ok means success.
+ign::status::error means failure, wrong password, or invalid encrypted file.
+ign::status::permission_denied means permission denied.
+
+
+SYNTAX:
+
+Encrypt one file into another file:
+
+ign::file::encrypt("secret.txt", "secret.ign", "password");
+
+
+Encrypt one file and automatically create secret.txt.ign:
+
+ign::file::encrypt("secret.txt", "password");
+
+
+Decrypt it later:
+
+ign::file::decrypt("secret.ign", "secret.txt", "password");
+
+
+Decrypt secret.txt.ign automatically back to secret.txt:
+
+ign::file::decrypt("secret.txt.ign", "password");
+
+
+Example:
+
+#include <ign.hpp>
+
+int main() {
+    ign::string password;
+    std::cin >> password;
+
+    const ign::status result = ign::file::encrypt(
+        "/tmp/config.txt",
+        password
+    );
+
+    if (result == ign::status::ok) {
+        ign::println_green("encrypted");
+    } else {
+        ign::println_error_red("encryption failed");
+    }
+}
+
+
+NOTES:
+
+encrypt() and decrypt() do not work in-place. The source and destination
+paths must be different.
+
+encrypt(path, password) writes to path + ".ign".
+
+decrypt(path, password) writes to path without ".ign" when the source path
+ends with ".ign". Otherwise it writes to path + ".dec".
+
+An empty password returns ign::status::error.
+
+The encrypted file stores a small ign-lib header, a random salt, a random
+nonce, and authenticated encrypted chunks.
+
+The same file encrypted twice with the same password will produce different
+encrypted output because a fresh random salt and nonce are used.
+
+Wrong passwords, damaged encrypted files, and modified encrypted files return
+ign::status::error while decrypting.
+
+Temporary files are used while writing, so a failed decrypt should not replace
+the destination with broken plaintext.
+
+The crypto implementation is Monocypher 4.0.2, stored in third_party.

@@ -1,0 +1,62 @@
+USAGE OF IGN_USE_NAMESPACE
+
+HEADER:
+modules/use.hpp
+
+MACROS:
+IGN_USE_NAMESPACE(namespace_name)
+IGN_END_NAMESPACE
+
+These macros create a local block and place using namespace inside it.
+They are meant for short scoped access to a namespace without adding a global
+using namespace line.
+
+
+SYNTAX:
+
+IGN_USE_NAMESPACE(ign)
+    println("siema");
+    file::exists("/tmp/jajko.txt");
+IGN_END_NAMESPACE
+
+
+This expands to:
+
+{
+    using namespace ign;
+
+    println("siema");
+    file::exists("/tmp/jajko.txt");
+}
+
+
+EXAMPLE:
+
+#include <ign.hpp>
+#include <iostream>
+
+int main() {
+    IGN_USE_NAMESPACE(ign)
+        println("siema");
+        file::exists("/tmp/jajko.txt");
+    IGN_END_NAMESPACE
+
+    std::cout << "costam\n";
+}
+
+
+NOTES:
+Do not add an extra opening brace after IGN_USE_NAMESPACE.
+
+Correct:
+IGN_USE_NAMESPACE(ign)
+    println("ok");
+IGN_END_NAMESPACE
+
+Wrong:
+IGN_USE_NAMESPACE(ign) {
+    println("extra brace");
+}
+IGN_END_NAMESPACE
+
+The namespace is visible only until IGN_END_NAMESPACE.

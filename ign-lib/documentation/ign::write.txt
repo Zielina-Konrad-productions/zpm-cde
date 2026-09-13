@@ -1,0 +1,78 @@
+USAGE OF ign::file WRITE HELPERS
+
+HEADER:
+modules/write.hpp
+
+NAMESPACE:
+ign::file
+
+The functions are stored in modules/write.hpp, but the syntax stays:
+ign::file::overwrite()
+ign::file::write()
+ign::file::write_line()
+ign::file::write_lines()
+ign::file::replace()
+ign::file::replace_first()
+
+
+FUNCTIONS:
+ign::file::overwrite() - overwrite file contents
+ign::file::write() - write text at the end of a file
+ign::file::write_line() - write one line at the end of a file
+ign::file::write_lines() - write multiple lines at the end of a file
+ign::file::replace() - replace matching lines
+ign::file::replace_first() - replace first matching line
+
+
+SYNTAX:
+
+Overwrite a file:
+
+ign::file::overwrite("file.txt", "hello");
+
+Overwrite a file with multiple lines:
+
+ign::file::overwrite("file.txt", {"first", "second"});
+
+No newline is added after the final line.
+
+
+Write raw text at the end of a file without adding a newline:
+
+ign::file::write("file.txt", "raw text");
+
+
+Write one line at the end of a file:
+
+ign::file::write_line("file.txt", "next line");
+
+Write multiple lines at the end of a file:
+
+ign::file::write_lines("file.txt", {"next", "another"});
+
+Every line written by write_line() or write_lines() gets a newline.
+
+
+Replace matching lines:
+
+ign::file::replace("file.txt", "old line", "new line");
+
+Replace one line with multiple lines:
+
+ign::file::replace("file.txt", "old line", {"new", "extra"});
+
+Replace only the first matching line:
+
+ign::file::replace_first("file.txt", "old line", "new line");
+
+
+NOTES:
+
+All functions keep the ign::file namespace.
+Include <ign.hpp> to get the whole library.
+If including modules directly, include modules/write.hpp for these functions.
+
+Status:
+These helpers return ign::status.
+Use ign::status::ok, ign::status::error, ign::status::not_found, and
+ign::status::permission_denied.

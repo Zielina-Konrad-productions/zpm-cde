@@ -1,0 +1,50 @@
+USAGE OF ign::status
+
+TYPE:
+ign::status - shared operation result enum
+
+VALUES:
+ign::status::ok - operation succeeded
+ign::status::error - operation failed
+ign::status::not_found - requested file, directory, key, or text was not found
+ign::status::permission_denied - operation was blocked by permissions
+
+IMPORTANT:
+Use ign::status for ign-lib operations such as file, catalog, config, write,
+and encryption helpers.
+
+ign::run() is different. It returns the process exit code, or a negative
+subprocess error code when a process cannot be started.
+
+
+SYNTAX:
+
+ign::status result = ign::file::create("file.txt");
+
+Example:
+if (result == ign::status::ok) {
+    ign::println("created");
+}
+
+
+ign::status result = ign::file::write("file.txt", "hello");
+
+if (result != ign::status::ok) {
+    ign::println("write failed");
+}
+
+
+USAGE EXAMPLE:
+
+#include <ign.hpp>
+
+int main() {
+    ign::status result = ign::file::write("~/logs/app.log", "started\n");
+
+    if (result != ign::status::ok) {
+        ign::println("cannot write log");
+        return 1;
+    }
+
+    return 0;
+}

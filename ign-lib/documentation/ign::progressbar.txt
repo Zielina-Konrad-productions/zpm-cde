@@ -1,0 +1,90 @@
+USAGE OF ign::progressbar
+
+HEADER:
+modules/progressbar.hpp
+
+NAMESPACE:
+ign::progressbar
+
+This module exposes the vendored p-ranav/indicators header-only library through
+ign::progressbar.
+
+You can include <ign.hpp> and use:
+ign::progressbar::ProgressBar
+ign::progressbar::IndeterminateProgressBar
+ign::progressbar::ProgressSpinner
+
+The original indicators namespace is also available because the vendored header
+is included directly.
+
+
+IMPORTANT:
+This is a namespace alias, not a rewritten ign-lib API.
+Use the upstream indicators classes and options under ign::progressbar.
+
+The vendored version is indicators v2.3 from:
+https://github.com/p-ranav/indicators
+
+No extra library link flag is required.
+
+Build example:
+g++ -std=c++17 -I./ign-lib main.cpp -o app
+
+
+PROGRESS BAR EXAMPLE:
+
+#include <ign.hpp>
+
+int main() {
+    ign::progressbar::ProgressBar bar{
+        ign::progressbar::option::BarWidth{40},
+        ign::progressbar::option::Start{"["},
+        ign::progressbar::option::Fill{"#"},
+        ign::progressbar::option::Lead{"#"},
+        ign::progressbar::option::Remainder{"-"},
+        ign::progressbar::option::End{"]"},
+        ign::progressbar::option::PrefixText{"progress:"},
+        ign::progressbar::option::ShowPercentage{true}
+    };
+
+    for (std::size_t i = 0; i <= 100; ++i) {
+        bar.set_progress(i);
+        ign::sleep(30);
+    }
+}
+
+
+INDETERMINATE BAR EXAMPLE:
+
+Use this when something is running but you do not know the total progress.
+This can render an animated bar like:
+
+progress: [======###======]
+
+#include <ign.hpp>
+
+int main() {
+    ign::progressbar::IndeterminateProgressBar bar{
+        ign::progressbar::option::BarWidth{18},
+        ign::progressbar::option::Start{"["},
+        ign::progressbar::option::Fill{"="},
+        ign::progressbar::option::Lead{"###"},
+        ign::progressbar::option::End{"]"},
+        ign::progressbar::option::PrefixText{"progress:"}
+    };
+
+    for (int i = 0; i < 80; ++i) {
+        bar.tick();
+        ign::sleep(50);
+    }
+
+    bar.mark_as_completed();
+}
+
+
+NOTES:
+The indicators library also supports colors, elapsed time, remaining time,
+spinners, block progress bars, multi progress, and dynamic progress.
+
+For advanced options, use the upstream documentation:
+https://github.com/p-ranav/indicators
