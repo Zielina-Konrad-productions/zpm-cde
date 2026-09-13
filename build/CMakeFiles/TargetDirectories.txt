@@ -1,4 +1,0 @@
-/home/ignacy/zpm-cde/build/CMakeFiles/zpm-cde.dir
-/home/ignacy/zpm-cde/build/CMakeFiles/INST.dir
-/home/ignacy/zpm-cde/build/CMakeFiles/edit_cache.dir
-/home/ignacy/zpm-cde/build/CMakeFiles/rebuild_cache.dir

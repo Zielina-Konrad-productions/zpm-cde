@@ -1,1 +1,0 @@
-/usr/bin/c++ -static -Wl,--dependency-file=CMakeFiles/INST.dir/link.d CMakeFiles/INST.dir/src/INSTALL.cpp.o -o INST
