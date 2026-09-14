@@ -95,8 +95,13 @@ int main(int argc, char* argv[]) {
 
     zpm::outl("[*] Dependencies:");
     zpm::outl("-grep");
+    zpm::outl("-curl");
+    zpm::outl("-coreutils");
     zpm::outl(' ');
     zpm::outl("[*] checking dependencies...");
+
+    //make sure that coreutilits are installed
+    ign::run_to_file("/dev/null", "apt-get install -y coreutils");
 
     if (ign::run_to_file("/dev/null", "grep --help") != 0) {
 
@@ -117,6 +122,35 @@ int main(int argc, char* argv[]) {
         } else {
             
             zpm::outl(zpm::color::bold_orange, "[!] grep missing and no APT to install it — install manually!", zpm::color::reset);
+            zpm::outl(' ');
+            zpm::outl(zpm::color::bold,
+                "NOTE, zpm-cde is made for Debian GNU/Linux\n"
+                "and apt compatibility for other distros, if you dont use them,\n"
+                "zpm will only work with flatpak and snap",
+                zpm::color::reset);
+            instalation_finished_with_errors = true;
+        }
+    }
+
+    if (ign::run_to_file("/dev/null", "curl --help") != 0) {
+
+        //check if apt instaled
+        if (zpm::common::detection_PM.pm.apt) {
+
+            zpm::outl("[<] installing curl...");
+
+            if (ign::run("apt-get install -y curl") == 0) {
+                zpm::outl("> curl installed");
+
+            } else {
+
+                zpm::outl(zpm::color::bold_orange, "[!] Warning curl install failed! — install manually!", zpm::color::reset);
+                instalation_finished_with_errors = true;
+            }
+
+        } else {
+            
+            zpm::outl(zpm::color::bold_orange, "[!] curl missing and no APT to install it — install manually!", zpm::color::reset);
             zpm::outl(' ');
             zpm::outl(zpm::color::bold,
                 "NOTE, zpm-cde is made for Debian GNU/Linux\n"
