@@ -16,28 +16,39 @@
 
 namespace zpm::common {
 
-    //version check function
-    //usage zpm::common::versioncheck("file localisation, fullpath")
-   inline void versioncheck(std::string localisation) {
-
-    std::string BOLD_RED = "\033[1;31m";
-    std::string RESET = "\033[0m";
-
-    std::ifstream file(localisation);
-
-    if (!file.is_open()) {
-
-        std::cerr << BOLD_RED << "UNKNOWN" << RESET;
-        return;
-    } else {
-
-        std::cout << BOLD_RED << file.rdbuf() << RESET;
-        return;
-
+    //version check function with string
+    //usage zpm::common::versioncheck_string("file localisation, fullpath")
+    inline std::string versioncheck_string(const std::string& localisation) {
+        std::string version;
+        std::string BOLD_RED = "\033[1;31m";
+        std::string RESET = "\033[0m";
+    
+        std::ifstream file(localisation);
+    
+        if (!file.is_open()) {
+            std::cerr << BOLD_RED << "UNKNOWN" << RESET;
+            return "UNKNOWN";
+        }
+    
+        std::getline(file, version);
+        return version;
+    }
+    
+    // version check function
+    // usage zpm::common::versioncheck("file localisation, fullpath")
+    inline void versioncheck(const std::string& localisation) {
+        std::string BOLD_RED = "\033[1;31m";
+        std::string RESET = "\033[0m";
+        std::string version = versioncheck_string(localisation);
+    
+        if (version == "UNKNOWN") {
+            std::cerr << BOLD_RED << "UNKNOWN" << RESET;
+        } else {
+            std::cout << version;
+        }
     }
 
-    return;
-   }
+
 
    //autodetect package managers
    class Detection_PM {

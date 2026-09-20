@@ -27,6 +27,9 @@ ign::run() - run program directly
 ign::run_shell() - run command through the system shell
 ign::run_to_file() - run program and write output to file
 ign::run_shell_to_file() - run shell command and write output to file
+ign::run_to_string() - run program and capture output as a string
+ign::run_to_string_with_status() - run program, capture output as a string, and return the exit code
+ign::run_shell_to_string() - run shell command and capture output as a string
 
 
 IMPORTANT:
@@ -307,6 +310,43 @@ The first non-zero result is returned.
 Output is not echoed to stdout for this overload.
 
 
+ign::run_to_string("command string");
+
+Example:
+std::string output = ign::run_to_string("git status --short");
+
+Notes:
+Runs a program (no shell, same parsing as ign::run("command string"))
+and returns its combined stdout and stderr as a string, including
+newlines if any.
+The exit code is discarded; use run_to_string_with_status() if you
+need it.
+
+
+ign::run_to_string_with_status("command string");
+
+Example:
+auto [output, status] = ign::run_to_string_with_status("git status --short");
+
+Notes:
+Same as run_to_string(), but also returns the process exit code.
+Returns a std::pair<std::string, int> (output, status).
+Useful when "did this produce output" is not a reliable enough signal
+on its own, since stdout and stderr are combined and a failing program
+can still print something.
+
+
+ign::run_shell_to_string("shell command");
+
+Example:
+std::string output = ign::run_shell_to_string("ls -la | grep cpp");
+
+Notes:
+Shell-enabled counterpart of run_to_string().
+Uses /bin/sh -c on Linux/macOS and cmd.exe /C on Windows.
+The exit code is discarded.
+
+
 USAGE EXAMPLE:
 
 #include <ign.hpp>
@@ -338,6 +378,15 @@ int main() {
         "echo first && echo second",
         false
     );
+
+    std::string status_output = ign::run_to_string("git status --short");
+    ign::println(status_output);
+
+    auto [build_output, build_status] =
+        ign::run_to_string_with_status("cmake --build build");
+    if (build_status != 0) {
+        ign::println("build failed!");
+    }
 
     return 0;
 }

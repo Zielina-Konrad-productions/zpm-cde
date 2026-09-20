@@ -57,6 +57,7 @@ int main(int argc, char* argv[]) {
 
     checkdependencies("grep");
     checkdependencies("curl");
+    checkdependencies("sed");
 
     if (argc < 2) {
         zpm::outl(zpm::color::bold_red, "ERROR: ", zpm::color::reset, "no command provided.");

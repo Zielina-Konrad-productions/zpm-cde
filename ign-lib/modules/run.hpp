@@ -619,8 +619,4 @@ inline int run_shell(
         return ss.str();
 }
 
-
-
-
-
 } // namespace ign
