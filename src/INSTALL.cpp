@@ -98,6 +98,7 @@ int main(int argc, char* argv[]) {
     zpm::outl("-curl");
     zpm::outl("-coreutils");
     zpm::outl("-sed");
+    zpm::outl("-tar");
     zpm::outl(' ');
     zpm::outl("[*] checking dependencies...");
 
@@ -132,6 +133,26 @@ int main(int argc, char* argv[]) {
 
         } 
     }
+
+    if (ign::run_to_file("/dev/null", "tar --help") != 0) {
+
+        //check if apt instaled
+        if (zpm::common::detection_PM.pm.apt) {
+
+            zpm::outl("[<] installing tar...");
+
+            if (ign::run("apt-get install -y tar") == 0) {
+                zpm::outl("> tar installed");
+
+            } else {
+
+                zpm::outl(zpm::color::bold_orange, "[!] Warning tar install failed! — install manually!", zpm::color::reset);
+                instalation_finished_with_errors = true;
+            }
+
+        } 
+    }
+
 
     if (ign::run_to_file("/dev/null", "sed --help") != 0) {
 
@@ -222,7 +243,7 @@ int main(int argc, char* argv[]) {
     }
 
     zpm::outl("[*] Adding executable permissions");
-    std::filesystem::path target = "/opt/zpm-cde/zpm-cde";
+    std::filesystem::path target = "/opt/zpm-cde/bin/zpm-cde";
 
     std::filesystem::permissions(
         target,

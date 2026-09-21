@@ -103,7 +103,7 @@ namespace {
 
         zpm::outl(zpm::color::bold_purple, "--version", zpm::color::reset);
         zpm::out("Update component of ZPM-CDE Edition ver: ");
-        zpm::common::versioncheck("../version.txt");
+        zpm::common::versioncheck("/opt/zpm-cde/version.txt");
         zpm::outl('.');
         zpm::outl("Copyright (c) 2026 Ignacyyy");
         zpm::outl("License: MIT");

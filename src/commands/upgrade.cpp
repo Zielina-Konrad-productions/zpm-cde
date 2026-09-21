@@ -12,12 +12,17 @@
 #include <sstream>
 #include <unistd.h>
 
-
-
 namespace {
+
+    //logpath
+    const std::string logpath = "/tmp/zpm-cde-upgrade.txt";
+
+    //installed version.txt location
+    constexpr const char* VERSION_FILE_PATH = "/opt/zpm-cde/version.txt";
 
     //variables
     bool upgradeavialable = false;
+    bool upgradesucces = true;
 
     //program arguments
     bool help = false;
@@ -83,6 +88,140 @@ namespace {
     
         return latestversion;
     }
+
+    void upgrade(){
+
+        char confirmation;
+
+        if (upgradeavialable) {
+
+            zpm::outl(zpm::color::bold_cyan, "Upgrade available!", zpm::color::reset);
+            zpm::outl(' ');
+            zpm::out(zpm::color::bold_orange, "Do you want to continue ?", zpm::color::reset);
+            zpm::out(" [y/n] ");
+            if (yes) {
+                confirmation = 'y';
+                zpm::outl(' ');
+            } else {
+                std::cin >> confirmation;
+                zpm::outl(' ');
+            }
+
+            if (confirmation != 'y') {
+                std::exit(0);
+            }
+
+            //create and clean catalog
+            zpm::outl("[*] cleaning /tmp/zpm-cde");
+
+            if (ign::catalog::create("/tmp/zpm-cde") != ign::status::ok) {
+                zpm::outl(' ');
+                zpm::outl(zpm::color::bold_red, "ERROR: could not create /tmp/zpm-cde", zpm::color::reset);
+                upgradesucces = false;
+                return;
+            }
+
+            if (ign::catalog::clear("/tmp/zpm-cde") != ign::status::ok) {
+                zpm::outl(' ');
+                zpm::outl(zpm::color::bold_red, "ERROR: cleaning failed", zpm::color::reset);
+                upgradesucces = false;
+                return;
+            }
+
+            //download latest version
+            zpm::outl("[*] downloading latest zpm-cde version");
+            std::string command =
+            "set -eo pipefail; "
+            "url=$(curl -fsSL https://api.github.com/repos/Zielina-Konrad-productions/zpm-cde/releases/latest "
+            "| sed -n 's/.*\"browser_download_url\": *\"\\([^\"]*\\.tar\\.gz\\)\".*/\\1/p' | head -n1); "
+            "if [ -z \"$url\" ]; then echo 'could not resolve asset url' >&2; exit 1; fi; "
+            "curl -fsSL \"$url\" | tar -xz -C /tmp/zpm-cde";
+
+            if (ign::run_shell_to_file(logpath, command) != 0) {
+                zpm::outl(' ');
+                zpm::outl(zpm::color::bold_red, "ERROR: downloading new version failed!", zpm::color::reset);
+                upgradesucces = false;
+                return;
+            }
+
+            zpm::outl("[*] installing to /opt/zpm-cde");
+            if (ign::catalog::exists("/opt/zpm-cde") == ign::status::ok) {
+                if (ign::catalog::remove("/opt/zpm-cde") != ign::status::ok) {
+                    zpm::outl(' ');
+                    zpm::outl(zpm::color::bold_red, "ERROR: could not remove old /opt/zpm-cde", zpm::color::reset);
+                    upgradesucces = false;
+                    return;
+                    }
+            }
+
+            if (ign::catalog::move("/tmp/zpm-cde", "/opt/zpm-cde") != ign::status::ok) {
+                zpm::outl(' ');
+                zpm::outl(zpm::color::bold_red, "ERROR: installing new version failed", zpm::color::reset);
+                upgradesucces = false;
+                return;
+            }
+
+            zpm::outl("[*] Updating symlink");
+            std::filesystem::path link = "/usr/bin/zpm-cde";
+            std::error_code ec;
+
+            if (std::filesystem::exists(link) || std::filesystem::is_symlink(link)) {
+                std::filesystem::remove(link, ec);
+                if (ec) {
+                    zpm::outl(' ');
+                    zpm::outl(zpm::color::bold_red, "ERROR: removing existing symlink failed! (", ec.message(), ")", zpm::color::reset);
+                    upgradesucces = false;
+                    return;
+                }
+            }
+
+            std::filesystem::create_symlink("/opt/zpm-cde/bin/zpm-cde", link, ec);
+                if (ec) {
+                    zpm::outl(' ');
+                    zpm::outl(zpm::color::bold_red, "ERROR: creating symlink failed! (", ec.message(), ")", zpm::color::reset);
+                    upgradesucces = false;
+                    return;
+                }
+
+            zpm::outl("[*] Adding executable permissions");
+            std::filesystem::path target = "/opt/zpm-cde/bin/zpm-cde";
+
+            std::filesystem::permissions(
+                target,
+                std::filesystem::perms::owner_exec |
+                std::filesystem::perms::group_exec |
+                std::filesystem::perms::others_exec,
+                std::filesystem::perm_options::add,
+                ec
+            );
+
+            if (ec) {
+                zpm::outl(' ');
+                zpm::outl(zpm::color::bold_red, "ERROR: setting executable permissions failed! (", ec.message(), ")", zpm::color::reset);
+                upgradesucces = false;
+                return;
+            }
+        }
+    }
+
+    void endscreen(){
+
+        if (upgradeavialable && upgradesucces ) {
+
+            zpm::outl(' ');
+            zpm::outl(zpm::color::bold_green, "Upgrade succes!", zpm::color::reset);
+            zpm::outl(zpm::color::bold, "LOGFILE:", zpm::color::reset);
+            zpm::outl(logpath);
+            zpm::outl(' ');
+        } else {
+
+            zpm::outl(' ');
+            zpm::outl(zpm::color::bold_red, "Upgrade failed!", zpm::color::reset);
+            zpm::outl(zpm::color::bold, "LOGFILE:", zpm::color::reset);
+            zpm::outl(logpath);
+            zpm::outl(' ');
+        }
+    }
 }
 
 int run_upgrade(int argc, char* argv[]) {
@@ -137,18 +276,28 @@ int run_upgrade(int argc, char* argv[]) {
 
     zpm::outl(zpm::color::bold_red, "zpm-cde upgrade program", zpm::color::reset);
     zpm::outl(' ');
-
     zpm::outl(zpm::color::bold, "zpm-cde versions:", zpm::color::reset);
     zpm::outl(zpm::color::cyan, "----------------------------------------------------", zpm::color::reset);
-    zpm::out("zpm-cde installed version: ");  zpm::common::versioncheck("../version.txt"); zpm::outl('.');
+    zpm::out("zpm-cde installed version: ");  zpm::common::versioncheck(VERSION_FILE_PATH); zpm::outl('.');
     zpm::out("zpm-cde latest version: "); std::string latest = printlatestversion(); zpm::outl('.');
     zpm::outl(zpm::color::cyan, "----------------------------------------------------", zpm::color::reset);
 
-    std::string local = zpm::common::versioncheck_string("../version.txt");
+    std::string local = zpm::common::versioncheck_string(VERSION_FILE_PATH);
 
-if (compareversions(latest, local) > 0) {
+    if (compareversions(latest, local) > 0) {
         upgradeavialable = true;
-}
+        zpm::outl(' ');
+    } else {
+        zpm::outl(' ');
+        zpm::outl(zpm::color::bold_green, "zpm-cde is up to date!", zpm::color::reset);
+        return 0;
+    }
+
+    //performs zpm-cde upgrade
+    upgrade();
+
+    //update succes / fail
+    endscreen();
 
     return 0;
 }

@@ -29,7 +29,7 @@ void versionmessage() {
 
     zpm::outl(zpm::color::bold_purple, "--version", zpm::color::reset);
     zpm::out("ZPM-CDE Edition ver: ");
-    zpm::common::versioncheck("version.txt");
+    zpm::common::versioncheck("/opt/zpm-cde/version.txt");
     zpm::outl('.');
     zpm::outl("Copyright (c) 2026 Ignacyyy");
     zpm::outl("License: MIT");
@@ -45,19 +45,31 @@ void helpmessage() {
     '\n', "remove, rm        Remove system package", '\n', "upgrade, upgr     Upgrade ZPM-CDE Edition", '\n', "uninstall         Uninstall ZPM-CDE Edition", '\n');
 }
 
-void checkdependencies (std::string name) {
-
+bool checkdependencies(const std::string& name) {
     if (ign::run_to_file("/dev/null", name + " --help") != 0) {
-
-        zpm::outl(zpm::color::bold_red, "ERROR: lacking dependencies: " ,name ,zpm::color::reset);
+        zpm::outl(zpm::color::bold_red, "ERROR: lacking dependency: ", name, zpm::color::reset);
+        return false;
     }
+    return true;
 }
 
 int main(int argc, char* argv[]) {
 
-    checkdependencies("grep");
-    checkdependencies("curl");
-    checkdependencies("sed");
+    //checkdependencies
+    bool all_ok = true;
+
+    for (const auto& dep : {"grep", "curl", "sed", "tar"}) {
+        if (!checkdependencies(dep)) {
+            all_ok = false;
+        }
+    }
+
+    if (!all_ok) {
+        zpm::outl(zpm::color::bold_red, "Fatal: missing required system dependencies.", zpm::color::reset);
+        return 1;
+    }
+
+    //ARGUMENTS LOGIC
 
     if (argc < 2) {
         zpm::outl(zpm::color::bold_red, "ERROR: ", zpm::color::reset, "no command provided.");
