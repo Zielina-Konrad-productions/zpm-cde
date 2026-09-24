@@ -31,10 +31,22 @@ namespace {
 
     void helpmessage() {
 
+        zpm::outl(zpm::color::bold_purple, "--help", zpm::color::reset);
+        zpm::outl(zpm::color::bold_red, "Usage: ", zpm::color::reset, "zpm-cde upgrade [options].");
+        zpm::outl(' ');
+        zpm::outl(zpm::color::bold_orange, "Options:", zpm::color::reset);
+        zpm::outl("--yes        -y  Automatic confirmation");
+        zpm::outl("--help       -h  Show this help message");
+        zpm::outl("--version    -v  Show version of zpm-cde");
     }
 
     void versionmessage() {
-
+        zpm::outl(zpm::color::bold_purple, "--version", zpm::color::reset);
+        zpm::out("Upgrade component of ZPM-CDE Edition ver: ");
+        zpm::common::versioncheck("/opt/zpm-cde/version.txt");
+        zpm::outl('.');
+        zpm::outl("Copyright (c) 2026 Ignacyyy");
+        zpm::outl("License: MIT");
     }
 
     // returns: -1 if a < b, 0 if a == b, 1 if a > b

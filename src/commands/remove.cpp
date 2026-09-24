@@ -101,7 +101,7 @@ namespace {
     void versionmessage_remove(){
 
         zpm::outl(zpm::color::bold_purple, "--version", zpm::color::reset);
-        zpm::out("Update component of ZPM-CDE Edition ver: ");
+        zpm::out("Remove component of ZPM-CDE Edition ver: ");
         zpm::common::versioncheck("/opt/zpm-cde/version.txt");
         zpm::outl('.');
         zpm::outl("Copyright (c) 2026 Ignacyyy");
