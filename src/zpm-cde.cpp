@@ -43,6 +43,10 @@ void helpmessage() {
     zpm::outl(zpm::color::bold_orange, "Commands:", zpm::color::reset);
     zpm::out("update, upd       Perform a system update ", '\n', "install, inst     Install packages",
     '\n', "remove, rm        Remove system package", '\n', "upgrade, upgr     Upgrade ZPM-CDE Edition", '\n', "uninstall         Uninstall ZPM-CDE Edition", '\n');
+    zpm::outl(' ');
+    zpm::outl(zpm::color::bold_green, "FILE LOCATIONS:", zpm::color::reset);
+    zpm::outl("/opt/zpm-cde - MAIN DIRECTORY");
+    zpm::outl("/usr/bin - SYMLINK");
 }
 
 bool checkdependencies(const std::string& name) {

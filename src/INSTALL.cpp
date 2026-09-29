@@ -28,8 +28,6 @@ namespace {
     void helpmessage(){
 
         zpm::outl(zpm::color::bold_purple, "--help", zpm::color::reset);
-        zpm::outl(zpm::color::bold_red, " [options].", zpm::color::reset);
-        zpm::outl(' ');
         zpm::outl(zpm::color::bold_orange, "Options:", zpm::color::reset);
         zpm::outl("--help   -h  Show this help message");
         zpm::outl("--yes    -y  Automatic confirmation");
