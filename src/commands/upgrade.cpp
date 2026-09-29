@@ -141,17 +141,27 @@ namespace {
             }
 
             //download latest version
+            //--strip-components=1 removes the top-level folder from the archive,
+            //so bin/zpm-cde lands directly in /tmp/zpm-cde/bin/zpm-cde
             zpm::outl("[*] downloading latest zpm-cde version");
             std::string command =
             "set -eo pipefail; "
             "url=$(curl -fsSL https://api.github.com/repos/Zielina-Konrad-productions/zpm-cde/releases/latest "
             "| sed -n 's/.*\"browser_download_url\": *\"\\([^\"]*\\.tar\\.gz\\)\".*/\\1/p' | head -n1); "
             "if [ -z \"$url\" ]; then echo 'could not resolve asset url' >&2; exit 1; fi; "
-            "curl -fsSL \"$url\" | tar -xz -C /tmp/zpm-cde";
+            "curl -fsSL \"$url\" | tar -xz --strip-components=1 -C /tmp/zpm-cde";
 
             if (ign::run_shell_to_file(logpath, command) != 0) {
                 zpm::outl(' ');
                 zpm::outl(zpm::color::bold_red, "ERROR: downloading new version failed!", zpm::color::reset);
+                upgradesucces = false;
+                return;
+            }
+
+            //check the new version BEFORE touching the old installation
+            if (!std::filesystem::exists("/tmp/zpm-cde/bin/zpm-cde")) {
+                zpm::outl(' ');
+                zpm::outl(zpm::color::bold_red, "ERROR: downloaded archive is invalid (bin/zpm-cde missing)", zpm::color::reset);
                 upgradesucces = false;
                 return;
             }
