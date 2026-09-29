@@ -158,9 +158,9 @@ namespace {
     
         //APT
         if (zpm::common::detection_PM.pm.apt) {
-            std::string out = ign::run_to_string("apt-cache policy " + name);
+            std::string out = ign::run_to_string("env LC_ALL=C apt-cache policy " + name);
             result.found_apt = out.find("Installed: (none)") == std::string::npos
-                             && out.find("Installed:") != std::string::npos;
+                                     && out.find("Installed:") != std::string::npos;
         }
     
         // FLATPAK
