@@ -1,3 +1,14 @@
+//dear reader, this program is made with vibe-coding and AI for complicated functions
+//so if it works DONT TOUCH IT
+
+//main function:
+//int main(int argc, char* argv[]);
+
+//Days i spend writing this code: idk
+
+//this is main interface for commands
+
+
 //library
 #include "../zpm-lib/zpm.hpp"
 #include "../ign-lib/ign.hpp"

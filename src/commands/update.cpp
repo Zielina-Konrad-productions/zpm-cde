@@ -487,7 +487,7 @@ int run_update(int argc, char* argv[]) {
     //AUTOMATIC SHUTDOWN / REBOOT LOGIC
 
     //shutdown after update
-    if (shutdown_update && confirmation) {
+    if (shutdown_update && hasupdates) {
 
         zpm::outl(zpm::color::blue, "Automatic system shutdown in 5 seconds...", zpm::color::reset);
         zpm::outl(' ');
@@ -498,7 +498,7 @@ int run_update(int argc, char* argv[]) {
     }
 
     //reboot after update
-    if (reboot_update && confirmation) {
+    if (reboot_update && hasupdates) {
 
         zpm::outl(zpm::color::blue, "Automatic system reboot in 5 seconds...", zpm::color::reset);
         zpm::outl(' ');

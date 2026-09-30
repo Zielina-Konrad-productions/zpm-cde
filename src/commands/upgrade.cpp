@@ -1,3 +1,23 @@
+//dear reader, this program is made with vibe-coding and AI for complicated functions
+//so if it works DONT TOUCH IT
+
+//program structure:
+//check lastest zpm-cde version  → check local versions  → compareversions → perform upgade → endscreen
+
+//main function:
+//int run_update(int argc, char* argv[]);
+
+//PM's - package menagers, e.g. flatpak, snap, apt....
+//detect existing PM's class + functions from zpm-lib/modules/common.hpp 
+
+//fixsystem() wrapper/interpreter for zpm::comon::fix_system()
+
+//Days i spend writing this code: 10 days or 240hours
+//most of i spend on fixing bugs.......
+
+//run from zpm-cde.cpp file
+
+
 //library
 #include "../../zpm-lib/zpm.hpp"
 #include "../../ign-lib/ign.hpp"
@@ -23,6 +43,7 @@ namespace {
     //variables
     bool upgradeavialable = false;
     bool upgradesucces = true;
+    bool creatingbackupfailed = false;
 
     //program arguments
     bool help = false;
@@ -140,6 +161,38 @@ namespace {
                 return;
             }
 
+            //remove old backup (if any)
+            if (ign::catalog::exists("/tmp/zpm-cde/copy/zpm-cde") == ign::status::ok) {
+                if (ign::catalog::remove("/tmp/zpm-cde/copy/zpm-cde") != ign::status::ok) {
+                    zpm::outl(' ');
+                    zpm::outl(zpm::color::bold_red, "ERROR: could not remove old backup of zpm-cde", zpm::color::reset);
+                    upgradesucces = false;
+                    creatingbackupfailed = true;
+                    return;
+                }
+            }
+
+            //copy zpm-cde (backup)
+            if (ign::catalog::copy("/opt/zpm-cde", "/tmp/zpm-cde/copy/zpm-cde") != ign::status::ok) {
+                zpm::outl(' ');
+                zpm::outl(zpm::color::bold_red, "ERROR: could not create backup of zpm-cde", zpm::color::reset);
+                upgradesucces = false;
+                creatingbackupfailed = true;
+                return;
+            } else if (ign::catalog::exists("/tmp/zpm-cde/copy/zpm-cde") != ign::status::ok) {
+                zpm::outl(' ');
+                zpm::outl(zpm::color::bold_red, "ERROR: backup of zpm-cde was not created", zpm::color::reset);
+                upgradesucces = false;
+                creatingbackupfailed = true;
+                return;
+            } else if (ign::catalog::empty("/tmp/zpm-cde/copy/zpm-cde") == ign::status::ok) {
+                zpm::outl(' ');
+                zpm::outl(zpm::color::bold_red, "ERROR: backup of zpm-cde is empty", zpm::color::reset);
+                upgradesucces = false;
+                creatingbackupfailed = true;
+                return;
+            }
+
             //download latest version
             //--strip-components=1 removes the top-level folder from the archive,
             //so bin/zpm-cde lands directly in /tmp/zpm-cde/bin/zpm-cde
@@ -229,16 +282,30 @@ namespace {
     void endscreen(){
 
         if (upgradeavialable && upgradesucces ) {
-
+        
             zpm::outl(' ');
             zpm::outl(zpm::color::bold_green, "Upgrade succes!", zpm::color::reset);
             zpm::outl(zpm::color::bold, "LOGFILE:", zpm::color::reset);
             zpm::outl(logpath);
             zpm::outl(' ');
         } else {
-
+        
             zpm::outl(' ');
-            zpm::outl(zpm::color::bold_red, "Upgrade failed!", zpm::color::reset);
+        
+            if (upgradeavialable && !creatingbackupfailed) {
+                if (ign::catalog::remove("/opt/zpm-cde") != ign::status::ok || ign::catalog::copy("/tmp/zpm-cde/copy/zpm-cde", "/opt/zpm-cde") != ign::status::ok) {
+                    zpm::outl(zpm::color::bold_red, "FATAL Upgrade failed!", zpm::color::reset);
+                    zpm::outl("Could not restore backup, zpm-cde may be broken, please reinstall zpm-cde");
+                    zpm::outl(zpm::color::bold, "BACKUP LOCATION:", zpm::color::reset);
+                    zpm::outl("/tmp/zpm-cde/copy/zpm-cde");
+                } else {
+                    zpm::outl(zpm::color::bold_red, "Upgrade failed!", zpm::color::reset);
+                    zpm::outl(zpm::color::bold_green, "Backup restored", zpm::color::reset);
+                    }
+                } else {
+                    zpm::outl(zpm::color::bold_red, "Upgrade failed!", zpm::color::reset);
+                }
+        
             zpm::outl(zpm::color::bold, "LOGFILE:", zpm::color::reset);
             zpm::outl(logpath);
             zpm::outl(' ');

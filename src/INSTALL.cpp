@@ -13,6 +13,7 @@
 
 //plik zpm-cde musi byc w /bin, czyli trzeba stowrzyc katalog, usun po stworzeniu calej struktury ignac
 
+
 //library
 #include "../zpm-lib/zpm.hpp"
 #include "../ign-lib/ign.hpp"
