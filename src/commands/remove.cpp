@@ -124,30 +124,46 @@ namespace {
     //returns empty string if nothing found
     std::string getflatpakappid(const std::string& name){
 
-        std::string cmd = "flatpak list --app --columns=application";
-        std::string output = ign::run_to_string(cmd);
-
-        std::string name_lower = name;
-        std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
-
+        auto lower = [](std::string s){ std::transform(s.begin(), s.end(), s.begin(), ::tolower); return s; };
+        const std::string name_lower = lower(name);
+    
+        std::string output = ign::run_to_string("flatpak list --app --columns=application,name");
+    
+        std::string only_partial; //set when exactly one app matches by substring
+        int partial_count = 0;
+    
         std::size_t pos = 0;
         while (pos < output.size()) {
-
-            std::size_t newline_pos = output.find('\n', pos);
-            std::string line = (newline_pos == std::string::npos) ? output.substr(pos) : output.substr(pos, newline_pos - pos);
-
-            std::string line_lower = line;
-            std::transform(line_lower.begin(), line_lower.end(), line_lower.begin(), ::tolower);
-
-            if (line_lower.find(name_lower) != std::string::npos) {
-                return line;
+    
+            std::size_t nl = output.find('\n', pos);
+            std::string line = (nl == std::string::npos) ? output.substr(pos) : output.substr(pos, nl - pos);
+    
+            std::size_t tab = line.find('\t');
+            std::string id      = (tab == std::string::npos) ? line : line.substr(0, tab);
+            std::string appname = (tab == std::string::npos) ? ""   : line.substr(tab + 1);
+    
+            if (!id.empty()) {
+    
+                std::string id_l = lower(id);
+                std::string name_l = lower(appname);
+                std::size_t dot = id_l.rfind('.');
+                std::string last = (dot == std::string::npos) ? id_l : id_l.substr(dot + 1);
+    
+                //exact match wins immediately
+                if (id_l == name_lower || last == name_lower || name_l == name_lower) return id;
+    
+                //otherwise count substring matches
+                if (id_l.find(name_lower) != std::string::npos || name_l.find(name_lower) != std::string::npos) {
+                    only_partial = id;
+                    partial_count++;
+                }
             }
-
-            if (newline_pos == std::string::npos) break;
-            pos = newline_pos + 1;
+    
+            if (nl == std::string::npos) break;
+            pos = nl + 1;
         }
-
-        return "";
+    
+        return (partial_count == 1) ? only_partial : "";
     }
 
     //helper function for checkpackagenames()
@@ -165,25 +181,15 @@ namespace {
     
         // FLATPAK
         if (zpm::common::detection_PM.pm.flatpak) {
-            std::string out = ign::run_to_string("flatpak list --app --columns=application,name");
-
-            std::string out_lower = out;
-            std::string name_lower = name;
-            std::transform(out_lower.begin(), out_lower.end(), out_lower.begin(), ::tolower);
-            std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
-
-            result.found_flatpak = out_lower.find(name_lower) != std::string::npos;
-
-            if (result.found_flatpak) {
-                result.flatpak_appid = getflatpakappid(name);
-            }
+            result.flatpak_appid = getflatpakappid(name);
+            result.found_flatpak = !result.flatpak_appid.empty();
         }
     
-            // SNAP
-            if (zpm::common::detection_PM.pm.snap) {
-                auto [out, exit_code] = ign::run_to_string_with_status("snap list " + name);
-                result.found_snap = (exit_code == 0) && !out.empty();
-            }
+        // SNAP
+         if (zpm::common::detection_PM.pm.snap) {
+            auto [out, exit_code] = ign::run_to_string_with_status("snap list " + name);
+            result.found_snap = (exit_code == 0) && !out.empty();
+        }
     
         return result;
     }
@@ -248,6 +254,10 @@ namespace {
             std::cin >> removal_source;
 
             if (std::cin.fail()) {
+                if (std::cin.eof()) {
+                    zpm::outl(zpm::color::bold_red, "ERROR:", zpm::color::reset, " no input.");
+                    std::exit(1);
+                }
                 std::cin.clear();
                 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                 zpm::outl(zpm::color::bold_red, "ERROR:", zpm::color::reset, " not a number, try again.");
@@ -306,13 +316,13 @@ namespace {
     //asks the user to confirm before removing, unless skipconfirmation_remove is set
     bool askforconfirmation(){
 
-        zpm::outl(' ');
         zpm::outl(zpm::color::bold, "About to remove:", zpm::color::reset);
 
         for (std::size_t i = 0; i < checked_packages.size(); i++) {
             zpm::outl("- ", checked_packages[i].name);
         }
 
+        zpm::outl(' ');
         zpm::out("Proceed? [y/n]: ");
 
         std::string answer;
@@ -339,7 +349,7 @@ namespace {
             const std::string& name = checked_packages[i].name;
             RemoveSource source = checked_packages[i].chosen_source;
             if (source == RemoveSource::apt) {
-                if (ign::run_to_file(logpath, "apt remove -y " + name) == 0) {
+                if (ign::run_to_file(logpath, "apt-get remove -y " + name) == 0) {
                     checked_packages[i].removed = true;
                 }
             } else if (source == RemoveSource::flatpak) {
@@ -357,7 +367,7 @@ namespace {
         ign::file::print_loopend();
     }
 
-    void endscreen_remove() {
+    bool endscreen_remove() {
 
         zpm::outl(' ');
     
@@ -366,9 +376,9 @@ namespace {
         for (std::size_t i = 0; i < checked_packages.size(); i++) {
 
             if (checked_packages[i].removed) {
-                zpm::outl(zpm::color::bold_green, "OK  ", zpm::color::reset, checked_packages[i].name);
+                zpm::outl(zpm::color::bold_green, "OK   ", zpm::color::reset, checked_packages[i].name);
             } else {
-                zpm::outl(zpm::color::bold_red, "FAIL", zpm::color::reset, checked_packages[i].name);
+                zpm::outl(zpm::color::bold_red, "FAIL ", zpm::color::reset, checked_packages[i].name);
                 all_success = false;
             }
         }
@@ -384,6 +394,8 @@ namespace {
         zpm::outl(zpm::color::bold, "LOGFILE:", zpm::color::reset);
         zpm::outl(logpath);
         zpm::outl(' ');
+
+        return all_success;
     }
 } //namespace
 
@@ -410,7 +422,7 @@ int run_remove(int argc, char* argv[]) {
 
         //unknown argument
         else if (!arg.empty() && arg[0] == '-') {
-            zpm::outl(zpm::color::bold_red, "ERROR:", zpm::color::reset, "unknown argument."); 
+            zpm::outl(zpm::color::bold_red, "ERROR: ", zpm::color::reset, "unknown argument."); 
             return 1;
         }
 
@@ -517,7 +529,5 @@ int run_remove(int argc, char* argv[]) {
     removepackages();
     
     //end screen + remove succes/failed
-    endscreen_remove();
-
-    return 0;
+    return endscreen_remove() ? 0 : 1;
 }

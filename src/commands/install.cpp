@@ -125,14 +125,53 @@ namespace {
     //returns empty string if nothing found
     std::string getflatpakappid(const std::string& name){
 
-        std::string cmd = "flatpak search " + name + " --columns=application";
-        std::string output = ign::run_to_string(cmd);
-
-        //take first line only
-        std::size_t newline_pos = output.find('\n');
-        std::string result = (newline_pos == std::string::npos) ? output : output.substr(0, newline_pos);
-
-        return result;
+        auto lower = [](std::string s){ std::transform(s.begin(), s.end(), s.begin(), ::tolower); return s; };
+        const std::string name_lower = lower(name);
+    
+        //--app = only applications, no runtimes/extensions
+        std::string output = ign::run_to_string("flatpak remote-ls --app --columns=application,name");
+    
+        std::string first_word_match; //name's first word equals query, e.g. "obs" -> "OBS Studio"
+        std::string first_partial;    //any substring match
+    
+        std::size_t pos = 0;
+        while (pos < output.size()) {
+    
+            std::size_t nl = output.find('\n', pos);
+            std::string line = (nl == std::string::npos) ? output.substr(pos) : output.substr(pos, nl - pos);
+    
+            std::size_t tab = line.find('\t');
+            std::string id      = (tab == std::string::npos) ? line : line.substr(0, tab);
+            std::string appname = (tab == std::string::npos) ? ""   : line.substr(tab + 1);
+    
+            //valid app ID has a dot and no spaces
+            if (id.find('.') != std::string::npos && id.find(' ') == std::string::npos) {
+    
+                std::string id_l   = lower(id);
+                std::string name_l = lower(appname);
+                std::size_t dot = id_l.rfind('.');
+                std::string last = id_l.substr(dot + 1);
+    
+                //exact match wins immediately
+                if (id_l == name_lower || last == name_lower || name_l == name_lower) return id;
+    
+                //first word of the app name equals the query
+                std::size_t sp = name_l.find(' ');
+                std::string firstword = (sp == std::string::npos) ? name_l : name_l.substr(0, sp);
+                if (first_word_match.empty() && firstword == name_lower) first_word_match = id;
+    
+                //any substring match
+                if (first_partial.empty() &&
+                    (id_l.find(name_lower) != std::string::npos || name_l.find(name_lower) != std::string::npos)) {
+                    first_partial = id;
+                }
+            }
+    
+            if (nl == std::string::npos) break;
+            pos = nl + 1;
+        }
+    
+        return !first_word_match.empty() ? first_word_match : first_partial;
     }
 
     //helper function for checkpackagenames()
@@ -149,21 +188,11 @@ namespace {
     
         // FLATPAK
         if (zpm::common::detection_PM.pm.flatpak) {
-            std::string out = ign::run_to_string("flatpak search " + name);
-
-            std::string out_lower = out;
-            std::string name_lower = name;
-            std::transform(out_lower.begin(), out_lower.end(), out_lower.begin(), ::tolower);
-            std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
-
-            result.found_flatpak = out_lower.find(name_lower) != std::string::npos;
-
-            if (result.found_flatpak) {
-                result.flatpak_appid = getflatpakappid(name);
-            }
+            result.flatpak_appid = getflatpakappid(name);
+            result.found_flatpak = !result.flatpak_appid.empty();
         }
     
-            // SNAP
+        // SNAP
         if (zpm::common::detection_PM.pm.snap) {
             auto [out, exit_code] = ign::run_to_string_with_status("snap info " + name);
             result.found_snap = (exit_code == 0) && !out.empty();
@@ -232,6 +261,12 @@ namespace {
             std::cin >> instalation_source;
 
             if (std::cin.fail()) {
+
+                if (std::cin.eof()) {
+                    zpm::outl(zpm::color::bold_red, "ERROR:", zpm::color::reset, " no input.");
+                    std::exit(1);
+                }
+
                 std::cin.clear();
                 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                 zpm::outl(zpm::color::bold_red, "ERROR:", zpm::color::reset, " not a number, try again.");
@@ -256,7 +291,7 @@ namespace {
         }
     }
 
-    //picks a source automatically for --yes / -y mode, priority: apt > flatpak > snap
+    //picks a source automatically for --auto / -a mode, priority: apt > flatpak > snap
     //if forced_source_install is set (-oa/-of/-os), only that source is considered - no fallback
     InstallSource chooseautomatically(const PackageCheckResult& pkg){
 
@@ -341,7 +376,7 @@ namespace {
         ign::file::print_loopend();
     }
 
-    void endscreen_install() {
+    bool endscreen_install() {
 
         zpm::outl(' ');
     
@@ -350,9 +385,9 @@ namespace {
         for (std::size_t i = 0; i < checked_packages.size(); i++) {
 
             if (checked_packages[i].installed) {
-                zpm::outl(zpm::color::bold_green, "OK  ", zpm::color::reset, checked_packages[i].name);
+                zpm::outl(zpm::color::bold_green, "OK   ", zpm::color::reset, checked_packages[i].name);
             } else {
-                zpm::outl(zpm::color::bold_red, "FAIL", zpm::color::reset, checked_packages[i].name);
+                zpm::outl(zpm::color::bold_red, "FAIL ", zpm::color::reset, checked_packages[i].name);
                 all_success = false;
             }
         }
@@ -368,6 +403,8 @@ namespace {
         zpm::outl(zpm::color::bold, "LOGFILE:", zpm::color::reset);
         zpm::outl(logpath);
         zpm::outl(' ');
+
+        return all_success;
     }
 } //namespace
 
@@ -394,7 +431,7 @@ int run_install(int argc, char* argv[]) {
 
         //unknown argument
         else if (!arg.empty() && arg[0] == '-') {
-            zpm::outl(zpm::color::bold_red, "ERROR:", zpm::color::reset, "unknown argument."); 
+            zpm::outl(zpm::color::bold_red, "ERROR: ", zpm::color::reset, "unknown argument."); 
             return 1;
         }
 
@@ -501,7 +538,5 @@ int run_install(int argc, char* argv[]) {
     install();
     
     //end screen + install succes/failed
-    endscreen_install();
-
-    return 0;
+    return endscreen_install() ? 0 : 1;
 }

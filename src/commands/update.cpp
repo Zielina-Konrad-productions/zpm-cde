@@ -248,8 +248,14 @@ namespace {
         //APT
         if (zpm::common::detection_PM.pm.apt) {
         
-            ign::run_shell_to_file(logpath, "apt update 2>/dev/null");
-            int res = ign::run_shell_to_file(logpath, "LC_ALL=C apt-get -s -o Debug::NoLocking=true upgrade 2>/dev/null | grep -E '^(Inst|Conf) '", false);
+            int upd = ign::run_shell_to_file(logpath, "apt update 2>/dev/null");
+            if (upd != 0) {
+                zpm::outl(zpm::color::bold_orange, "WARNING: apt update failed, results may be outdated.", zpm::color::reset);
+                zpm::outl(' ');
+            }
+
+            //full-upgrade, so the checked list matches what update() really runs
+            int res = ign::run_shell_to_file(logpath, "LC_ALL=C apt-get -s -o Debug::NoLocking=true full-upgrade 2>/dev/null | grep -E '^(Inst|Conf|Remv) '", false);
             const auto out = ign::file::read(logpath);
             
             apthasupdates = std::count(out.begin(), out.end(), '\n') > 0;
@@ -271,7 +277,7 @@ namespace {
             int res = ign::run_shell_to_file(logpath, "LC_ALL=C snap refresh --list 2>/dev/null | grep -v '^Name' | grep -v '^$'", false);
             const auto out = ign::file::read(logpath);
             snaphasupdates = std::count(out.begin(), out.end(), '\n') > 0;
-            checkfailed = checkfailed || res != 0;
+            checkfailed = checkfailed || res > 1;
         }
     
         //no updates + updates detected
@@ -292,7 +298,7 @@ namespace {
             if (zpm::common::detection_PM.pm.apt && apthasupdates){
 
                 zpm::outl(zpm::color::bold_red, "Packages to update: (APT)", zpm::color::reset);
-                ign::run_to_file(logpath, "apt-get -s upgrade", true, true);
+                ign::run_to_file(logpath, "apt-get -s full-upgrade", true, true);
                 zpm::outl(' ');
             }
 
@@ -326,7 +332,7 @@ namespace {
             std::cin >> confirmation_ask;
         }
     
-        if (confirmation_ask != 'y') std::exit(1);
+        if (confirmation_ask != 'y' && confirmation_ask != 'Y') std::exit(1);
     
         zpm::outl(' ');
         confirmation = true;
@@ -347,10 +353,15 @@ namespace {
                     logpath,
                     "DEBIAN_FRONTEND=noninteractive apt-get -y full-upgrade"
                 );
-                ign::run_shell_to_file(
-                    logpath,
-                    "DEBIAN_FRONTEND=noninteractive apt-get -y autoremove && apt-get clean"
-                );
+
+                //cleanup only after a successful upgrade
+                if (res == 0) {
+                    ign::run_shell_to_file(
+                        logpath,
+                        "DEBIAN_FRONTEND=noninteractive apt-get -y autoremove && apt-get clean"
+                    );
+                }
+
                 status = status && (res == 0);
                 ran_any = true;
             }
@@ -358,7 +369,12 @@ namespace {
             //FLATPAK
             if (zpm::common::detection_PM.pm.flatpak && flatpakhasupdates) {
                 int res = ign::run_to_file(logpath, "flatpak update -y");
-                ign::run_to_file(logpath, "flatpak uninstall --unused -y");
+
+                //cleanup only after a successful update
+                if (res == 0) {
+                    ign::run_to_file(logpath, "flatpak uninstall --unused -y");
+                }
+
                 status = status && (res == 0);
                 ran_any = true;
             }
@@ -425,7 +441,7 @@ int run_update(int argc, char* argv[]) {
 
         //unknown arguments error
         else {
-            zpm::outl(zpm::color::bold_red, "ERROR:", zpm::color::reset, "unknown argument."); 
+            zpm::outl(zpm::color::bold_red, "ERROR: ", zpm::color::reset, "unknown argument."); 
             return 1;
         } 
     }
@@ -483,22 +499,25 @@ int run_update(int argc, char* argv[]) {
     //end screen + update succes/failed 
     endscreen_update();
 
+    //exit code: 1 if the update (or the check) failed
+    const int exit_code = ((hasupdates && confirmation && !updatesucces) || checkfailed) ? 1 : 0;
+
 
     //AUTOMATIC SHUTDOWN / REBOOT LOGIC
 
     //shutdown after update
-    if (shutdown_update && hasupdates) {
+    if (shutdown_update && updatesucces) {
 
         zpm::outl(zpm::color::blue, "Automatic system shutdown in 5 seconds...", zpm::color::reset);
         zpm::outl(' ');
         ign::sleep_sec(5);
-        ign::run_shell("shutdown");
+        ign::run_shell("shutdown now");
         zpm::outl(' ');
         return 0;
     }
 
     //reboot after update
-    if (reboot_update && hasupdates) {
+    if (reboot_update && updatesucces) {
 
         zpm::outl(zpm::color::blue, "Automatic system reboot in 5 seconds...", zpm::color::reset);
         zpm::outl(' ');
@@ -508,5 +527,5 @@ int run_update(int argc, char* argv[]) {
         return 0;
     }
 
-    return 0;
+    return exit_code;
 }
