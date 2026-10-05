@@ -247,7 +247,9 @@ namespace ign::catalog {
         return entries;
     }
 
-    // Recursively copies a directory and its contents.
+        // Recursively copies a directory and its contents.
+    // Symlinks are copied as symlinks (not followed), so broken links
+    // inside the tree don't make the copy fail.
     // Usage example: ign::catalog::copy("/tmp/source", "/tmp/backup");
     inline ign::status copy(
         const std::filesystem::path& source,
@@ -273,6 +275,7 @@ namespace ign::catalog {
             source_path,
             destination_path,
             std::filesystem::copy_options::recursive |
+                std::filesystem::copy_options::copy_symlinks |
                 std::filesystem::copy_options::overwrite_existing,
             ec);
 

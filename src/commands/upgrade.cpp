@@ -37,6 +37,9 @@ namespace {
     //logpath
     const std::string logpath = "/tmp/zpm-cde-upgrade.txt";
 
+    //backup location (OUTSIDE /tmp/zpm-cde, because that catalog is moved to /opt)
+    const std::string backuppath = "/tmp/zpm-cde-backup";
+
     //installed version.txt location
     constexpr const char* VERSION_FILE_PATH = "/opt/zpm-cde/version.txt";
 
@@ -44,6 +47,7 @@ namespace {
     bool upgradeavialable = false;
     bool upgradesucces = true;
     bool creatingbackupfailed = false;
+    bool opt_touched = false; //true only after we started modifying /opt/zpm-cde
 
     //program arguments
     bool help = false;
@@ -162,8 +166,8 @@ namespace {
             }
 
             //remove old backup (if any)
-            if (ign::catalog::exists("/tmp/zpm-cde/copy/zpm-cde") == ign::status::ok) {
-                if (ign::catalog::remove("/tmp/zpm-cde/copy/zpm-cde") != ign::status::ok) {
+            if (ign::catalog::exists(backuppath) == ign::status::ok) {
+                if (ign::catalog::remove(backuppath) != ign::status::ok) {
                     zpm::outl(' ');
                     zpm::outl(zpm::color::bold_red, "ERROR: could not remove old backup of zpm-cde", zpm::color::reset);
                     upgradesucces = false;
@@ -173,19 +177,19 @@ namespace {
             }
 
             //copy zpm-cde (backup)
-            if (ign::catalog::copy("/opt/zpm-cde", "/tmp/zpm-cde/copy/zpm-cde") != ign::status::ok) {
+            if (ign::catalog::copy("/opt/zpm-cde", backuppath) != ign::status::ok) {
                 zpm::outl(' ');
                 zpm::outl(zpm::color::bold_red, "ERROR: could not create backup of zpm-cde", zpm::color::reset);
                 upgradesucces = false;
                 creatingbackupfailed = true;
                 return;
-            } else if (ign::catalog::exists("/tmp/zpm-cde/copy/zpm-cde") != ign::status::ok) {
+            } else if (ign::catalog::exists(backuppath) != ign::status::ok) {
                 zpm::outl(' ');
                 zpm::outl(zpm::color::bold_red, "ERROR: backup of zpm-cde was not created", zpm::color::reset);
                 upgradesucces = false;
                 creatingbackupfailed = true;
                 return;
-            } else if (ign::catalog::empty("/tmp/zpm-cde/copy/zpm-cde") == ign::status::ok) {
+            } else if (ign::catalog::empty(backuppath) == ign::status::ok) {
                 zpm::outl(' ');
                 zpm::outl(zpm::color::bold_red, "ERROR: backup of zpm-cde is empty", zpm::color::reset);
                 upgradesucces = false;
@@ -198,11 +202,12 @@ namespace {
             //so bin/zpm-cde lands directly in /tmp/zpm-cde/bin/zpm-cde
             zpm::outl("[*] downloading latest zpm-cde version");
             std::string command =
-            "set -eo pipefail; "
             "url=$(curl -fsSL https://api.github.com/repos/Zielina-Konrad-productions/zpm-cde/releases/latest "
             "| sed -n 's/.*\"browser_download_url\": *\"\\([^\"]*\\.tar\\.gz\\)\".*/\\1/p' | head -n1); "
             "if [ -z \"$url\" ]; then echo 'could not resolve asset url' >&2; exit 1; fi; "
-            "curl -fsSL \"$url\" | tar -xz --strip-components=1 -C /tmp/zpm-cde";
+            "curl -fsSL \"$url\" -o /tmp/zpm-cde-download.tar.gz "
+            "&& tar -xzf /tmp/zpm-cde-download.tar.gz --strip-components=1 -C /tmp/zpm-cde; "
+            "rc=$?; rm -f /tmp/zpm-cde-download.tar.gz; exit $rc";
 
             if (ign::run_shell_to_file(logpath, command) != 0) {
                 zpm::outl(' ');
@@ -220,6 +225,10 @@ namespace {
             }
 
             zpm::outl("[*] installing to /opt/zpm-cde");
+
+            //from this point /opt/zpm-cde is modified, so rollback makes sense
+            opt_touched = true;
+
             if (ign::catalog::exists("/opt/zpm-cde") == ign::status::ok) {
                 if (ign::catalog::remove("/opt/zpm-cde") != ign::status::ok) {
                     zpm::outl(' ');
@@ -229,11 +238,21 @@ namespace {
                     }
             }
 
-            if (ign::catalog::move("/tmp/zpm-cde", "/opt/zpm-cde") != ign::status::ok) {
+            //copy - if it fails, upgrade fails (and rollback runs)
+            if (ign::catalog::copy("/tmp/zpm-cde", "/opt/zpm-cde") != ign::status::ok) {
                 zpm::outl(' ');
                 zpm::outl(zpm::color::bold_red, "ERROR: installing new version failed", zpm::color::reset);
                 upgradesucces = false;
                 return;
+            }
+
+            //remove source - only a warning, /opt/zpm-cde is already complete
+            const ign::status rm = ign::catalog::remove("/tmp/zpm-cde");
+            if (rm != ign::status::ok) {
+                zpm::outl(zpm::color::bold_orange, "[!] Warning: could not remove /tmp/zpm-cde — remove it manually", zpm::color::reset);
+                if (rm == ign::status::permission_denied) {
+                    zpm::outl("(permission denied — files may be read-only or locked)");
+                }
             }
 
             zpm::outl("[*] Updating symlink");
@@ -292,12 +311,13 @@ namespace {
         
             zpm::outl(' ');
         
-            if (upgradeavialable && !creatingbackupfailed) {
-                if (ign::catalog::remove("/opt/zpm-cde") != ign::status::ok || ign::catalog::copy("/tmp/zpm-cde/copy/zpm-cde", "/opt/zpm-cde") != ign::status::ok) {
+            //rollback only if /opt/zpm-cde was actually touched
+            if (upgradeavialable && opt_touched && !creatingbackupfailed) {
+                if (ign::catalog::remove("/opt/zpm-cde") != ign::status::ok || ign::catalog::copy(backuppath, "/opt/zpm-cde") != ign::status::ok) {
                     zpm::outl(zpm::color::bold_red, "FATAL Upgrade failed!", zpm::color::reset);
                     zpm::outl("Could not restore backup, zpm-cde may be broken, please reinstall zpm-cde");
                     zpm::outl(zpm::color::bold, "BACKUP LOCATION:", zpm::color::reset);
-                    zpm::outl("/tmp/zpm-cde/copy/zpm-cde");
+                    zpm::outl(backuppath);
                 } else {
                     zpm::outl(zpm::color::bold_red, "Upgrade failed!", zpm::color::reset);
                     zpm::outl(zpm::color::bold_green, "Backup restored", zpm::color::reset);
@@ -372,6 +392,13 @@ int run_upgrade(int argc, char* argv[]) {
     zpm::outl(zpm::color::cyan, "----------------------------------------------------", zpm::color::reset);
 
     std::string local = zpm::common::versioncheck_string(VERSION_FILE_PATH);
+
+    //empty version = no internet / GitHub API limit / missing version.txt
+    if (latest.empty() || local.empty()) {
+        zpm::outl(' ');
+        zpm::outl(zpm::color::bold_red, "ERROR: could not check versions (no internet / GitHub API limit?)", zpm::color::reset);
+        return 1;
+    }
 
     if (compareversions(latest, local) > 0) {
         upgradeavialable = true;

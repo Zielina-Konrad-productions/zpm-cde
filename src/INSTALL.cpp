@@ -193,18 +193,7 @@ int main(int argc, char* argv[]) {
     
     zpm::outl("[*] Starting instalation");
 
-    if (ign::catalog::exists("/opt/zpm-cde") == ign::status::ok) {
-
-        zpm::outl(zpm::color::bold_orange, "[!] existing zpm-cde instalation found!", zpm::color::reset);
-        zpm::outl("[<] removing old instalaiton...");
-
-        if (ign::catalog::remove("/opt/zpm-cde") != ign::status::ok) {
-            zpm::outl(zpm::color::bold_red, "ERROR: removing old instalation failed!", zpm::color::reset);
-            return 1;
-        }
-    }
-
-    zpm::outl("[*] Moving directory");
+    //checks BEFORE removing the old installation, otherwise we could delete our own working directory
     std::filesystem::path working_directory = std::filesystem::current_path();
     std::filesystem::path source = working_directory;
 
@@ -215,10 +204,52 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (ign::catalog::move(source.string(), "/opt/zpm-cde") != ign::status::ok) {
+    //make sure we are in the real package directory (the source gets removed after copying!)
+    if (!std::filesystem::exists(source / "bin" / "zpm-cde", ec_check)) {
+        zpm::outl(zpm::color::bold_red, "ERROR: bin/zpm-cde not found in the current directory!", zpm::color::reset);
+        zpm::outl("Run the installer from the zpm-cde package directory.");
+        return 1;
+    }
 
-    zpm::outl(zpm::color::bold_red, "ERROR: moving directory failed!", zpm::color::reset);
-    return 1;
+    if (ign::catalog::exists("/opt/zpm-cde") == ign::status::ok) {
+
+        zpm::outl(zpm::color::bold_orange, "[!] existing zpm-cde instalation found!", zpm::color::reset);
+        zpm::outl("[<] removing old instalaiton...");
+
+        //remove old symlink first, so a failed install doesn't leave a dangling link
+        std::filesystem::remove("/usr/bin/zpm-cde", ec_check);
+        if (ec_check) {
+            zpm::outl(zpm::color::bold_red, "ERROR: removing old symlink failed! (", ec_check.message(), ")", zpm::color::reset);
+            return 1;
+        }
+
+        if (ign::catalog::remove("/opt/zpm-cde") != ign::status::ok) {
+            zpm::outl(zpm::color::bold_red, "ERROR: removing old instalation failed!", zpm::color::reset);
+            return 1;
+        }
+    }
+
+    zpm::outl("[*] Moving directory");
+
+    //copy - if it fails, installation cannot continue
+    if (ign::catalog::copy(source.string(), "/opt/zpm-cde") != ign::status::ok) {
+
+        zpm::outl(zpm::color::bold_red, "ERROR: copying directory failed!", zpm::color::reset);
+        return 1;
+    }
+
+    //remove source - if it fails, it's only a warning (installation in /opt is already complete)
+    const ign::status rm = ign::catalog::remove(source.string());
+    if (rm != ign::status::ok) {
+
+        zpm::outl(zpm::color::bold_orange, "[!] Warning: could not remove the source directory — remove it manually:", zpm::color::reset);
+        zpm::outl(source.string());
+
+        if (rm == ign::status::permission_denied) {
+            zpm::outl("(permission denied — files may be read-only or locked by Windows)");
+        }
+
+        instalation_finished_with_errors = true;
     }
 
     zpm::outl("[*] Creating symlink");
